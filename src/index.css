@@ -15,6 +15,15 @@
   --font-sans: 'Poppins', sans-serif;
 }
 
+/* Hide scrollbar globally */
+*::-webkit-scrollbar {
+  display: none;
+}
+
+* {
+  scrollbar-width: none;
+}
+
 body {
   background-color: var(--color-background);
   color: var(--color-text-main);

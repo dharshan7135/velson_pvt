@@ -1,15 +1,54 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { IoClose } from 'react-icons/io5';
 import FormInput from '../../components/FormInput';
 import FormSelect from '../../components/FormSelect';
 
 const Item_master = () => {
+    const [modal, setModal] = useState({ open: false, type: '', label: '' });
+
+    const handleAdd = (label) => setModal({ open: true, type: 'Add', label });
+    const handleView = (label) => setModal({ open: true, type: 'View', label });
+    const closeModal = () => setModal({ open: false, type: '', label: '' });
+
     return (
         <div className="min-h-screen bg-slate-50/50 p-6">
+            {/* Modal */}
+            {modal.open && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={closeModal}>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                        <div className="bg-[#0097A7] px-6 py-4 flex items-center justify-between">
+                            <h2 className="text-lg font-bold text-white">{modal.type} — {modal.label}</h2>
+                            <button onClick={closeModal} className="text-white/80 hover:text-white text-2xl leading-none cursor-pointer"><IoClose /></button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1">Name</label>
+                                <input type="text" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-[#0097A7] focus:ring-4 focus:ring-[#0097A7]/10" placeholder={`Enter ${modal.label} name`} />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1">Code</label>
+                                <input type="text" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-[#0097A7] focus:ring-4 focus:ring-[#0097A7]/10" placeholder={`Enter ${modal.label} code`} />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1">Description</label>
+                                <textarea className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-[#0097A7] focus:ring-4 focus:ring-[#0097A7]/10 resize-none" rows="3" placeholder={`Enter description`}></textarea>
+                            </div>
+                        </div>
+                        <div className="px-6 pb-6 flex justify-end gap-3">
+                            <button onClick={closeModal} className="px-5 py-2 bg-slate-100 text-slate-600 rounded-lg font-semibold text-sm hover:bg-slate-200 transition-colors cursor-pointer">Cancel</button>
+                            <button className="px-5 py-2 bg-[#0097A7] text-white rounded-lg font-semibold text-sm hover:bg-[#00838F] transition-colors cursor-pointer">
+                                {modal.type === 'Add' ? 'Save' : 'Close'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Header Section */}
             {/* <div className="max-w-7xl mx-auto mb-8 flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-slate-100"> */}
             <div className="flex items-center gap-3">
                 {/* <div className="w-2 h-8 bg-main rounded-full"></div> */}
-                <h1 className="text-2xl font-bold text-slate-800 pb-6">Item Master</h1>
+                <h1 className="text-2xl font-bold text-slate-800 pb-6">ITEM MASTER</h1>
                 {/* </div> */}
                 {/* <div className="flex gap-3">
                     <button className="px-4 py-2 bg-main-light text-main rounded-xl font-semibold flex items-center gap-2 hover:opacity-80 transition-opacity">
@@ -31,7 +70,7 @@ const Item_master = () => {
 
                     <div className="px-8 pb-8">
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-8 gap-y-5">
-                            <FormSelect label="Item Group" id="itemGroup" required options={[{ label: 'A', value: 'a' }]} />
+                            <FormSelect label="Item Group" id="itemGroup" required options={[{ label: 'A', value: 'a' }]} onAdd={handleAdd} onView={handleView} />
                             <FormInput label="Part No" id="partNo" required defaultValue="0" />
                             <FormInput label="OutSource Part No" id="outsourcePartNo" />
                             <FormInput label="Part Name" id="partName" required />
@@ -40,12 +79,12 @@ const Item_master = () => {
                             <FormInput label="Description" id="description" />
                             <FormInput label="Size" id="size" />
                             <FormInput label="Weight" id="weight" defaultValue="0" />
-                            <FormSelect label="UOM" id="uom" required options={[{ label: 'Pcs', value: 'pcs' }]} />
+                            <FormSelect label="UOM" id="uom" required options={[{ label: 'Pcs', value: 'pcs' }]} onAdd={handleAdd} onView={handleView} />
                             <FormInput label="HSN Code" id="hsnCode" />
                             <FormInput label="Purchase Rate" id="purchaseRate" required defaultValue="0" />
                             <FormInput label="Margin (%)" id="margin" defaultValue="0" />
                             <FormInput label="Rate" id="rate" required defaultValue="0" />
-                            <FormSelect label="Currency" id="currency" options={[{ label: 'Rs', value: 'rs' }]} defaultValue="rs" />
+                            <FormSelect label="Currency" id="currency" options={[{ label: 'Rs', value: 'rs' }]} defaultValue="rs" onAdd={handleAdd} onView={handleView} />
 
                             <div className="grid grid-cols-[140px_1fr] items-center gap-3 group">
                                 <label className="text-sm font-semibold text-slate-700 flex items-center justify-end gap-1 text-right">
@@ -73,20 +112,20 @@ const Item_master = () => {
 
                     <div className="px-8 pb-8">
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-8 gap-y-5">
-                            <FormSelect label="Sub Group" id="subGroup" required options={[]} />
+                            <FormSelect label="Sub Group" id="subGroup" required options={[]} onAdd={handleAdd} onView={handleView} />
                             <FormInput label="Reorder Level" id="reorderLevel" defaultValue="0" />
                             <FormInput label="Min Stock" id="minStock" defaultValue="0" />
-                            <FormSelect label="Store Name" id="storeName" options={[{ label: 'STORE 1-MAINSTORE', value: 'store1' }]} defaultValue="store1" />
+                            <FormSelect label="Store Name" id="storeName" options={[{ label: 'STORE 1-MAINSTORE', value: 'store1' }]} defaultValue="store1" onAdd={handleAdd} onView={handleView} />
                             <FormInput label="Rack No" id="rackNo" />
                             <FormInput label="Location" id="location" />
                             <FormInput label="Remarks" id="remarks" />
                             <FormInput label="Note" id="note" />
-                            <FormSelect label="Item Type" id="itemType" required options={[]} />
+                            <FormSelect label="Item Type" id="itemType" required options={[]} onAdd={handleAdd} onView={handleView} />
                             <FormInput label="Source" id="source" />
                             <FormInput label="Barcode Type" id="barcodeType" />
                             <FormInput label="Barcode" id="barcode" />
                             <FormInput label="Print Name" id="printName" />
-                            <FormSelect label="QC Type" id="qcType" required options={[{ label: 'QUALITY', value: 'quality' }]} defaultValue="quality" />
+                            <FormSelect label="QC Type" id="qcType" required options={[{ label: 'QUALITY', value: 'quality' }]} defaultValue="quality" onAdd={handleAdd} onView={handleView} />
                         </div>
                     </div>
                 </div>
@@ -103,8 +142,8 @@ const Item_master = () => {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-8 gap-y-5">
-                            <FormSelect label="Material Grade" id="materialGrade" options={[]} />
-                            <FormSelect label="Material Type" id="materialType" options={[]} />
+                            <FormSelect label="Material Grade" id="materialGrade" options={[]} onAdd={handleAdd} onView={handleView} />
+                            <FormSelect label="Material Type" id="materialType" options={[]} onAdd={handleAdd} onView={handleView} />
                             <FormInput label="Raw Material" id="rawMaterial" />
                             <FormInput label="Length" id="length" />
                             <FormInput label="RM. Weight" id="rmWeight" />
