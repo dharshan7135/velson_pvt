@@ -14,9 +14,10 @@ const menuItems = [
     {
         label: 'Masters', icon: Building2,
         children: [
-            { label: 'Company', path: '/masters/company', icon: Building2 },
-            { label: 'Employees', path: '/masters/employees', icon: Users },
-            { label: 'Contractors', path: '/masters/contractors', icon: Handshake },
+            { label: 'Item Master', active: true },
+            { label: 'Vendor Master', active: false },
+            { label: 'Customer Master', active: false },
+            { label: 'Employee Master', active: false },
         ],
     },
     {
@@ -53,7 +54,7 @@ const menuItems = [
     },
 ];
 
-const Sidebar = () => {
+const Sidebar = ({ activePage, setActivePage }) => {
     const [hovered, setHovered] = useState(false);
     const [expandedMenus, setExpandedMenus] = useState(['Masters']);
     const location = useLocation();
@@ -117,9 +118,8 @@ const Sidebar = () => {
                             <div className="sidebar__submenu">
                                 {item.children.map((child) => (
                                     <button
-                                        key={child.path}
-                                        className={`sidebar__subitem ${isActive(child.path) ? 'sidebar__subitem--active' : ''}`}
-                                        onClick={() => navigate(child.path)}
+                                        key={child.label}
+                                        className={`sidebar__subitem ${child.active ? 'sidebar__subitem--active' : ''}`}
                                     >
                                         <span className="sidebar__subitem-dot" />
                                         {child.label}
