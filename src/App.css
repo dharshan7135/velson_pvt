@@ -8,9 +8,16 @@
 .app-main {
   flex: 1;
   min-width: 0;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   margin-left: 72px;
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  height: 100vh;
+}
+
+.app-content {
+  flex: 1;
+  overflow-y: auto;
 }
 
 /* ===== Sidebar ===== */
