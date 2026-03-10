@@ -25,7 +25,26 @@ const ContractorMaster = () => {
     const openAdd = () => { setForm(emptyForm); setEditId(null); setErrors({}); setModal(true); };
     const openEdit = (row) => { setForm({ ...row }); setEditId(row.id); setErrors({}); setModal(true); };
     const close = () => setModal(false);
-    const set = (f, v) => setForm((p) => ({ ...p, [f]: v }));
+    const set = (f, v) => {
+        setForm((p) => ({ ...p, [f]: v }));
+        setErrors(prev => {
+            const e = { ...prev };
+            const val = (v || '').trim();
+            if (f === 'contractorCode') {
+                if (!val) e.contractorCode = 'Required';
+                else {
+                    const isDup = state.contractors?.some(c => c.contractorCode.toLowerCase() === val.toLowerCase() && c.id !== editId);
+                    if (isDup) e.contractorCode = 'Must be unique';
+                    else delete e.contractorCode;
+                }
+            }
+            if (f === 'contractorName') {
+                if (!val) e.contractorName = 'Required';
+                else delete e.contractorName;
+            }
+            return e;
+        });
+    };
 
     const validate = () => {
         const e = {};

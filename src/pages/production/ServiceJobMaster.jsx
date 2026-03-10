@@ -28,7 +28,21 @@ const ServiceJobMaster = () => {
     const openAdd = () => { setForm(emptyForm); setEditId(null); setErrors({}); setModal(true); };
     const openEdit = (row) => { setForm({ ...row }); setEditId(row.id); setErrors({}); setModal(true); };
     const close = () => setModal(false);
-    const set = (f, v) => setForm((p) => ({ ...p, [f]: v }));
+    const set = (f, v) => {
+        setForm((p) => ({ ...p, [f]: v }));
+        setErrors(prev => {
+            const e = { ...prev };
+            if (f === 'vehicleType') {
+                if (!v) e.vehicleType = 'Required';
+                else delete e.vehicleType;
+            }
+            if (f === 'jobName') {
+                if (!(v || '').trim()) e.jobName = 'Required';
+                else delete e.jobName;
+            }
+            return e;
+        });
+    };
 
     const validate = () => {
         const e = {};
@@ -47,10 +61,10 @@ const ServiceJobMaster = () => {
 
     return (
         <div className="p-6">
-            <PageHeader title="Service Job Master" description="Define service jobs and their charges" icon={Briefcase} />
-            <DataTable columns={columns} data={state.serviceJobs} onAdd={openAdd} addLabel="Add Service Job" onEdit={openEdit} onDelete={(r) => deleteRecord('serviceJobs', r.id)} />
+            <PageHeader title="Vehicle Service Master" description="Define service jobs and their charges" icon={Briefcase} />
+            <DataTable columns={columns} data={state.serviceJobs} onAdd={openAdd} addLabel="Add Vehicle Service" onEdit={openEdit} onDelete={(r) => deleteRecord('serviceJobs', r.id)} />
 
-            <FormModal isOpen={modal} onClose={close} title={editId ? 'Edit Service Job' : 'Add Service Job'} size="md">
+            <FormModal isOpen={modal} onClose={close} title={editId ? 'Edit Vehicle Service' : 'Add Vehicle Service'} size="md">
                 <div className="p-6 space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                         <DropdownWithCreate label="Vehicle Type" id="vehicleType" required options={vtOptions} value={form.vehicleType} onChange={(v) => set('vehicleType', v)} error={errors.vehicleType} />

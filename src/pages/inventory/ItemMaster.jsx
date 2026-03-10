@@ -57,11 +57,44 @@ const ItemMaster = () => {
     const itemTypeOptions = ['Raw Material', 'Finished Goods', 'Semi Finished', 'Consumables'].map(v => ({ label: v, value: v }));
     const qcTypeOptions = ['QUALITY', 'STANDARD', 'NONE'].map(v => ({ label: v, value: v }));
     const gstOptions = [5, 12, 18, 28].map(v => ({ label: `${v}%`, value: v }));
+    const materialGradeOptions = Array.from(new Set(state.items.map(i => i.materialGrade).filter(Boolean))).map(v => ({ label: v, value: v }));
+    const materialTypeOptions = Array.from(new Set(state.items.map(i => i.materialType).filter(Boolean))).map(v => ({ label: v, value: v }));
 
     const openAdd = () => { setForm(emptyForm); setEditId(null); setErrors({}); setActiveTab('basic'); setModal(true); };
     const openEdit = (row) => { setForm({ ...row }); setEditId(row.id); setErrors({}); setActiveTab('basic'); setModal(true); };
     const close = () => setModal(false);
-    const set = (f, v) => setForm((p) => ({ ...p, [f]: v }));
+    const set = (f, v) => {
+        setForm((p) => ({ ...p, [f]: v }));
+        setErrors(prev => {
+            const e = { ...prev };
+            if (['itemGroup', 'uom', 'itemType', 'qcType'].includes(f)) {
+                if (!v) e[f] = 'Required';
+                else delete e[f];
+            }
+            if (['partNo', 'partName'].includes(f)) {
+                if (!(v || '').trim()) e[f] = 'Required';
+                else delete e[f];
+            }
+            if (f === 'rate') {
+                if (v === '' || v === null) e.rate = 'Required';
+                else if (Number(v) < 0) e.rate = 'Must be ≥ 0';
+                else delete e.rate;
+            }
+            if (f === 'gstPer') {
+                if (v === '' || v === null) e.gstPer = 'Required';
+                else delete e.gstPer;
+            }
+            if (f === 'purchaseRate') {
+                if (v !== '' && Number(v) < 0) e.purchaseRate = 'Must be ≥ 0';
+                else delete e.purchaseRate;
+            }
+            if (f === 'marginPercent') {
+                if (v !== '' && (Number(v) < 0 || Number(v) > 100)) e.marginPercent = '0-100';
+                else delete e.marginPercent;
+            }
+            return e;
+        });
+    };
 
     const validate = () => {
         const e = {};
@@ -149,8 +182,8 @@ const ItemMaster = () => {
 
     const renderRawMaterial = () => (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-            <FormField label="Material Grade" id="materialGrade" value={form.materialGrade} onChange={(e) => set('materialGrade', e.target.value)} />
-            <FormField label="Material Type" id="materialType" value={form.materialType} onChange={(e) => set('materialType', e.target.value)} />
+            <DropdownWithCreate label="Material Grade" id="materialGrade" options={materialGradeOptions} value={form.materialGrade} onChange={(v) => set('materialGrade', v)} />
+            <DropdownWithCreate label="Material Type" id="materialType" options={materialTypeOptions} value={form.materialType} onChange={(v) => set('materialType', v)} />
             <FormField label="Raw Material" id="rawMaterial" value={form.rawMaterial} onChange={(e) => set('rawMaterial', e.target.value)} />
             <FormField label="Length" id="length" value={form.length} onChange={(e) => set('length', e.target.value)} />
             <FormField label="RM Weight" id="rmWeight" type="number" value={form.rmWeight} onChange={(e) => set('rmWeight', e.target.value)} />
@@ -160,11 +193,6 @@ const ItemMaster = () => {
 
     const renderOther = () => (
         <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-                <FormField label="Brand" id="brand2" value={form.brand} onChange={(e) => set('brand', e.target.value)} />
-                <FormField label="Model" id="model2" value={form.model} onChange={(e) => set('model', e.target.value)} />
-                <FormField label="Description" id="description2" value={form.description} onChange={(e) => set('description', e.target.value)} />
-            </div>
             <div className="form-field-group">
                 <label className="form-label">Image Upload</label>
                 <div className="w-full max-w-[200px] aspect-square bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 hover:border-[#0097A7] transition-colors cursor-pointer">

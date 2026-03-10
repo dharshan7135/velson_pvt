@@ -29,7 +29,21 @@ const ReferenceMaster = () => {
     const openAdd = () => { setForm(emptyForm); setEditId(null); setErrors({}); setModal(true); };
     const openEdit = (row) => { setForm({ ...row }); setEditId(row.id); setErrors({}); setModal(true); };
     const close = () => setModal(false);
-    const set = (f, v) => setForm((p) => ({ ...p, [f]: v }));
+    const set = (f, v) => {
+        setForm((p) => ({ ...p, [f]: v }));
+        setErrors(prev => {
+            const e = { ...prev };
+            if (f === 'referenceType') {
+                if (!v) e.referenceType = 'Required';
+                else delete e.referenceType;
+            }
+            if (['code', 'description'].includes(f)) {
+                if (!(v || '').trim()) e[f] = 'Required';
+                else delete e[f];
+            }
+            return e;
+        });
+    };
 
     const validate = () => {
         const e = {};

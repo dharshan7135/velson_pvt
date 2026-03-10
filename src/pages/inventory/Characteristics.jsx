@@ -21,6 +21,18 @@ const Characteristics = () => {
     const openEdit = (row) => { setForm({ characteristics: row.characteristics }); setEditId(row.id); setErrors({}); setModal(true); };
     const close = () => setModal(false);
 
+    const set = (f, v) => {
+        setForm(p => ({ ...p, [f]: v }));
+        setErrors(prev => {
+            const e = { ...prev };
+            if (f === 'characteristics') {
+                if (!(v || '').trim()) e.characteristics = 'Required';
+                else delete e.characteristics;
+            }
+            return e;
+        });
+    };
+
     const validate = () => {
         const e = {};
         if (!form.characteristics.trim()) e.characteristics = 'Required';
@@ -42,7 +54,7 @@ const Characteristics = () => {
 
             <FormModal isOpen={modal} onClose={close} title={editId ? 'Edit Characteristic' : 'Add Characteristic'} size="sm">
                 <div className="p-6 space-y-4">
-                    <FormField label="Characteristics" id="characteristics" required value={form.characteristics} onChange={(e) => setForm({ characteristics: e.target.value })} error={errors.characteristics} />
+                    <FormField label="Characteristics" id="characteristics" required value={form.characteristics} onChange={(e) => set('characteristics', e.target.value)} error={errors.characteristics} />
                     <div className="flex justify-end gap-3 pt-2">
                         <button onClick={close} className="px-5 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-semibold text-sm hover:bg-slate-200 transition-colors cursor-pointer">Cancel</button>
                         <button onClick={save} className="px-5 py-2.5 bg-[#0097A7] text-white rounded-xl font-semibold text-sm hover:bg-[#00838F] transition-colors cursor-pointer">{editId ? 'Update' : 'Save'}</button>

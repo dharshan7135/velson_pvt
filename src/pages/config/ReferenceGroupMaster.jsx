@@ -21,6 +21,18 @@ const ReferenceGroupMaster = () => {
     const openEdit = (row) => { setForm({ groupName: row.groupName }); setEditId(row.id); setErrors({}); setModal(true); };
     const close = () => setModal(false);
 
+    const set = (f, v) => {
+        setForm(p => ({ ...p, [f]: v }));
+        setErrors(prev => {
+            const e = { ...prev };
+            if (f === 'groupName') {
+                if (!(v || '').trim()) e.groupName = 'Required';
+                else delete e.groupName;
+            }
+            return e;
+        });
+    };
+
     const validate = () => {
         const e = {};
         if (!form.groupName.trim()) e.groupName = 'Required';
@@ -42,7 +54,7 @@ const ReferenceGroupMaster = () => {
 
             <FormModal isOpen={modal} onClose={close} title={editId ? 'Edit Reference Group' : 'Add Reference Group'} size="sm">
                 <div className="p-6 space-y-4">
-                    <FormField label="Group Name" id="groupName" required value={form.groupName} onChange={(e) => setForm({ groupName: e.target.value })} error={errors.groupName} />
+                    <FormField label="Group Name" id="groupName" required value={form.groupName} onChange={(e) => set('groupName', e.target.value)} error={errors.groupName} />
                     <div className="flex justify-end gap-3 pt-2">
                         <button onClick={close} className="px-5 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-semibold text-sm hover:bg-slate-200 transition-colors cursor-pointer">Cancel</button>
                         <button onClick={save} className="px-5 py-2.5 bg-[#0097A7] text-white rounded-xl font-semibold text-sm hover:bg-[#00838F] transition-colors cursor-pointer">{editId ? 'Update' : 'Save'}</button>

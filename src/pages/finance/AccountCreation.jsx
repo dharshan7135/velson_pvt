@@ -49,23 +49,148 @@ const AccountCreation = () => {
     const openAdd = () => { setForm(emptyForm); setEditId(null); setErrors({}); setModal(true); };
     const openEdit = (row) => { setForm({ ...row }); setEditId(row.id); setErrors({}); setModal(true); };
     const close = () => setModal(false);
-    const set = (f, v) => setForm((p) => ({ ...p, [f]: v }));
+    const set = (f, v) => {
+        setForm((p) => ({ ...p, [f]: v }));
+
+        setErrors(prev => {
+            const e = { ...prev };
+            if (f === 'acCode') {
+                const val = (v || '').trim();
+                if (!val) delete e.acCode;
+                else if (!/^[A-Za-z0-9]+$/.test(val)) e.acCode = 'Must contain only alphanumeric characters';
+                else {
+                    const isDuplicate = state.accounts.some(a => a.acCode.toLowerCase() === val.toLowerCase() && a.id !== editId);
+                    if (isDuplicate) e.acCode = 'A/C Code must be unique';
+                    else delete e.acCode;
+                }
+            }
+            if (f === 'acName') {
+                const val = (v || '').trim();
+                if (!val) e.acName = 'A/C Name is required';
+                else if (val.length < 3) e.acName = 'Minimum 3 characters required';
+                else if (!/^[A-Za-z0-9\s]+$/.test(val)) e.acName = 'Only alphabets, numbers, and spaces allowed';
+                else delete e.acName;
+            }
+            if (f === 'dueDays') {
+                if (v === '' || v === null) e.dueDays = 'Due Days is required';
+                else if (isNaN(Number(v)) || Number(v) < 0) e.dueDays = 'Must be greater than or equal to zero';
+                else delete e.dueDays;
+            }
+            if (f === 'creditLimit') {
+                if (v === '' || v === null) e.creditLimit = 'Credit Limit is required';
+                else if (isNaN(Number(v)) || Number(v) < 0) e.creditLimit = 'Cannot be negative';
+                else delete e.creditLimit;
+            }
+            if (f === 'hireCharges') {
+                if (v === '' || v === null) e.hireCharges = 'Hire Charges is required';
+                else if (isNaN(Number(v))) e.hireCharges = 'Must be numeric';
+                else delete e.hireCharges;
+            }
+            if (['ledgerType', 'group', 'taxType', 'status'].includes(f)) {
+                if (!v) e[f] = `${f.charAt(0).toUpperCase() + f.slice(1).replace(/([A-Z])/g, ' $1')} is required`;
+                else delete e[f];
+            }
+            if (['phoneNo', 'cellNo'].includes(f)) {
+                if (v && !/^[6-9]\d{9}$/.test(v)) e[f] = 'Invalid 10-digit phone number';
+                else delete e[f];
+            }
+            if (f === 'aadhaarNo') {
+                if (v && !/^\d{12}$/.test(v)) e.aadhaarNo = 'Must contain exactly 12 numeric digits';
+                else delete e.aadhaarNo;
+            }
+            if (f === 'bankAcNo') {
+                if (v && !/^\d{9,18}$/.test(v)) e.bankAcNo = 'Invalid bank account format (9-18 digits)';
+                else delete e.bankAcNo;
+            }
+            if (f === 'ifscCode') {
+                if (v && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(v.toUpperCase().trim())) {
+                    e.ifscCode = 'Invalid IFSC format (e.g. SBIN0012345)';
+                } else delete e.ifscCode;
+            }
+            return e;
+        });
+    };
 
     const validate = () => {
         const e = {};
-        if (!form.acName.trim()) e.acName = 'Required';
-        if (form.dueDays === '') e.dueDays = 'Required';
-        if (form.creditLimit === '') e.creditLimit = 'Required';
-        if (!form.ledgerType) e.ledgerType = 'Required';
-        if (form.hireCharges === '') e.hireCharges = 'Required';
-        if (!form.group) e.group = 'Required';
-        if (!form.taxType) e.taxType = 'Required';
-        if (!form.status) e.status = 'Required';
-        if (form.tdsPercent && (Number(form.tdsPercent) < 0 || Number(form.tdsPercent) > 100)) e.tdsPercent = '0-100';
-        if (form.tcsPercent && (Number(form.tcsPercent) < 0 || Number(form.tcsPercent) > 100)) e.tcsPercent = '0-100';
-        if (form.gstNo && form.gstNo.length !== 15) e.gstNo = 'Must be 15 chars';
-        if (form.panNo && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(form.panNo)) e.panNo = 'Invalid PAN';
-        if (form.aadhaarNo && form.aadhaarNo.length !== 12) e.aadhaarNo = '12 digits';
+
+        // 1. Required Fields
+        if (!form.acName?.trim()) e.acName = 'A/C Name is required';
+        else if (form.acName.trim().length < 3) e.acName = 'Minimum 3 characters required';
+        else if (!/^[A-Za-z0-9\s]+$/.test(form.acName.trim())) e.acName = 'Only alphabets, numbers, and spaces allowed';
+
+        if (form.dueDays === '' || form.dueDays === null) e.dueDays = 'Due Days is required';
+        else if (isNaN(Number(form.dueDays)) || Number(form.dueDays) < 0) e.dueDays = 'Must be greater than or equal to zero';
+
+        if (form.creditLimit === '' || form.creditLimit === null) e.creditLimit = 'Credit Limit is required';
+        else if (isNaN(Number(form.creditLimit)) || Number(form.creditLimit) < 0) e.creditLimit = 'Cannot be negative';
+
+        if (!form.ledgerType) e.ledgerType = 'Ledger Type is required';
+
+        if (form.hireCharges === '' || form.hireCharges === null) e.hireCharges = 'Hire Charges is required';
+        else if (isNaN(Number(form.hireCharges))) e.hireCharges = 'Must be numeric';
+
+        if (!form.group) e.group = 'Group is required';
+        if (!form.taxType) e.taxType = 'Tax Type is required';
+        if (!form.status) e.status = 'Status is required';
+
+        // 2. A/C Code (Unique & Alphanumeric)
+        if (form.acCode?.trim()) {
+            if (!/^[A-Za-z0-9]+$/.test(form.acCode.trim())) e.acCode = 'Must contain only alphanumeric characters';
+            else {
+                const isDuplicate = state.accounts.some(a => a.acCode.toLowerCase() === form.acCode.trim().toLowerCase() && a.id !== editId);
+                if (isDuplicate) e.acCode = 'A/C Code must be unique';
+            }
+        }
+
+        // Percentage checks (TDS/TCS)
+        if (form.tdsPercent !== '' && (Number(form.tdsPercent) < 0 || Number(form.tdsPercent) > 100)) e.tdsPercent = 'Must be between 0 and 100';
+        if (form.tcsPercent !== '' && (Number(form.tcsPercent) < 0 || Number(form.tcsPercent) > 100)) e.tcsPercent = 'Must be between 0 and 100';
+
+        // Hire Charges & KM & Opening Balance (Numeric)
+        if (form.km !== '' && isNaN(Number(form.km))) e.km = 'Must be numeric';
+        if (form.openingBalance !== '' && isNaN(Number(form.openingBalance))) e.openingBalance = 'Must be numeric';
+
+        // IFSC Format (4 letters + 0 + 6 alphanumeric)
+        if (form.ifscCode?.trim() && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(form.ifscCode.toUpperCase().trim())) {
+            e.ifscCode = 'Invalid IFSC format (e.g. SBIN0012345)';
+        }
+
+        // GST Format (15 characters)
+        if (form.gstNo?.trim() && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(form.gstNo.toUpperCase().trim())) {
+            e.gstNo = 'Invalid 15-character GSTIN format';
+        }
+
+        // PAN Format (ABCDE1234F)
+        if (form.panNo?.trim() && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(form.panNo.toUpperCase().trim())) {
+            e.panNo = 'Invalid Indian PAN format (e.g. ABCDE1234F)';
+        }
+
+        // Aadhaar (Exactly 12 digits)
+        if (form.aadhaarNo?.trim() && !/^\d{12}$/.test(form.aadhaarNo.trim())) {
+            e.aadhaarNo = 'Must contain exactly 12 numeric digits';
+        }
+
+        // Email format
+        if (form.emailId?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.emailId)) {
+            e.emailId = 'Invalid email format';
+        }
+
+        // Phone & Cell (10 digits)
+        const phoneRegex = /^[6-9]\d{9}$/;
+        if (form.phoneNo?.trim() && !phoneRegex.test(form.phoneNo.trim())) e.phoneNo = 'Invalid 10-digit phone number';
+        if (form.cellNo?.trim() && !phoneRegex.test(form.cellNo.trim())) e.cellNo = 'Invalid 10-digit phone number';
+
+        // Bank Account Format
+        if (form.bankAcNo?.trim() && !/^\d{9,18}$/.test(form.bankAcNo.trim())) {
+            e.bankAcNo = 'Invalid bank account format (9-18 digits)';
+        }
+
+        // Contact Person (Alphabets and spaces)
+        if (form.contactPerson?.trim() && !/^[A-Za-z\s]+$/.test(form.contactPerson.trim())) {
+            e.contactPerson = 'Only alphabets and spaces allowed';
+        }
+
         setErrors(e);
         return Object.keys(e).length === 0;
     };
@@ -94,10 +219,10 @@ const AccountCreation = () => {
                 <div className="p-6 space-y-6">
                     <FormContainer title="Basic Information">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-                            <FormField label="A/C Code" id="acCode" value={form.acCode} onChange={(e) => set('acCode', e.target.value)} />
+                            <FormField label="A/C Code" id="acCode" value={form.acCode} onChange={(e) => set('acCode', e.target.value)} error={errors.acCode} />
                             <FormField label="L ID" id="lId" value={form.lId} onChange={(e) => set('lId', e.target.value)} />
                             <FormField label="A/C Name" id="acName" required value={form.acName} onChange={(e) => set('acName', e.target.value)} error={errors.acName} />
-                            <FormField label="Address" id="address" value={form.address} onChange={(e) => set('address', e.target.value)} />
+                            <FormField label="Address" id="address" value={form.address} onChange={(e) => set('address', e.target.value)} error={errors.address} />
                             <FormField label="Due Days" id="dueDays" required type="number" value={form.dueDays} onChange={(e) => set('dueDays', e.target.value)} error={errors.dueDays} />
                             <FormField label="TDS %" id="tdsPercent" type="number" value={form.tdsPercent} onChange={(e) => set('tdsPercent', e.target.value)} error={errors.tdsPercent} />
                             <FormField label="Short Name" id="shortName" value={form.shortName} onChange={(e) => set('shortName', e.target.value)} />
@@ -105,19 +230,19 @@ const AccountCreation = () => {
                             <FormField label="TCS %" id="tcsPercent" type="number" value={form.tcsPercent} onChange={(e) => set('tcsPercent', e.target.value)} error={errors.tcsPercent} />
                             <DropdownWithCreate label="Ledger Type" id="ledgerType" required options={ledgerTypes} value={form.ledgerType} onChange={(v) => set('ledgerType', v)} error={errors.ledgerType} />
                             <FormField label="Hire Charges" id="hireCharges" required type="number" value={form.hireCharges} onChange={(e) => set('hireCharges', e.target.value)} error={errors.hireCharges} />
-                            <FormField label="KM" id="km" type="number" value={form.km} onChange={(e) => set('km', e.target.value)} />
+                            <FormField label="KM" id="km" type="number" value={form.km} onChange={(e) => set('km', e.target.value)} error={errors.km} />
                             <DropdownWithCreate label="Group" id="group" required options={groupOptions} value={form.group} onChange={(v) => set('group', v)} onAdd={() => setAddGroupModal(true)} error={errors.group} />
                             <FormField label="Account Name" id="accountName" value={form.accountName} onChange={(e) => set('accountName', e.target.value)} />
-                            <FormField label="Opening Balance" id="openingBalance" type="number" value={form.openingBalance} onChange={(e) => set('openingBalance', e.target.value)} />
+                            <FormField label="Opening Balance" id="openingBalance" type="number" value={form.openingBalance} onChange={(e) => set('openingBalance', e.target.value)} error={errors.openingBalance} />
                             <DropdownWithCreate label="A/C Type" id="acType" options={acTypeOptions} value={form.acType} onChange={(v) => set('acType', v)} />
-                            <FormField label="Area" id="area" value={form.area} onChange={(e) => set('area', e.target.value)} />
+                            <FormField label="Area" id="area" value={form.area} onChange={(e) => set('area', e.target.value)} error={errors.area} />
                         </div>
                     </FormContainer>
 
                     <FormContainer title="Banking Details">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-                            <FormField label="Bank A/C No" id="bankAcNo" value={form.bankAcNo} onChange={(e) => set('bankAcNo', e.target.value)} />
-                            <FormField label="IFSC Code" id="ifscCode" value={form.ifscCode} onChange={(e) => set('ifscCode', e.target.value)} />
+                            <FormField label="Bank A/C No" id="bankAcNo" value={form.bankAcNo} onChange={(e) => set('bankAcNo', e.target.value)} error={errors.bankAcNo} />
+                            <FormField label="IFSC Code" id="ifscCode" value={form.ifscCode} onChange={(e) => set('ifscCode', e.target.value.toUpperCase())} error={errors.ifscCode} />
                             <FormField label="Branch" id="branch" value={form.branch} onChange={(e) => set('branch', e.target.value)} />
                             <FormField label="Bank" id="bank" value={form.bank} onChange={(e) => set('bank', e.target.value)} />
                         </div>
@@ -134,7 +259,7 @@ const AccountCreation = () => {
                                 </select>
                             </div>
                             <FormField label="State Code" id="stateCode" value={form.stateCode} onChange={(e) => set('stateCode', e.target.value)} />
-                            <FormField label="GST No" id="gstNo" value={form.gstNo} onChange={(e) => set('gstNo', e.target.value)} error={errors.gstNo} />
+                            <FormField label="GST No" id="gstNo" value={form.gstNo} onChange={(e) => set('gstNo', e.target.value.toUpperCase())} error={errors.gstNo} />
                             <FormField label="PAN No" id="panNo" value={form.panNo} onChange={(e) => set('panNo', e.target.value.toUpperCase())} error={errors.panNo} />
                             <FormField label="Aadhaar No" id="aadhaarNo" value={form.aadhaarNo} onChange={(e) => set('aadhaarNo', e.target.value)} error={errors.aadhaarNo} />
                         </div>
@@ -142,10 +267,10 @@ const AccountCreation = () => {
 
                     <FormContainer title="Contact & Status">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-                            <FormField label="Email ID" id="emailId" type="email" value={form.emailId} onChange={(e) => set('emailId', e.target.value)} />
-                            <FormField label="Phone No" id="phoneNo" value={form.phoneNo} onChange={(e) => set('phoneNo', e.target.value)} />
-                            <FormField label="Cell No" id="cellNo" value={form.cellNo} onChange={(e) => set('cellNo', e.target.value)} />
-                            <FormField label="Contact Person" id="contactPerson" value={form.contactPerson} onChange={(e) => set('contactPerson', e.target.value)} />
+                            <FormField label="Email ID" id="emailId" type="email" value={form.emailId} onChange={(e) => set('emailId', e.target.value)} error={errors.emailId} />
+                            <FormField label="Phone No" id="phoneNo" value={form.phoneNo} onChange={(e) => set('phoneNo', e.target.value)} error={errors.phoneNo} />
+                            <FormField label="Cell No" id="cellNo" value={form.cellNo} onChange={(e) => set('cellNo', e.target.value)} error={errors.cellNo} />
+                            <FormField label="Contact Person" id="contactPerson" value={form.contactPerson} onChange={(e) => set('contactPerson', e.target.value)} error={errors.contactPerson} />
                             <DropdownWithCreate label="Status" id="status" required options={statusOptions} value={form.status} onChange={(v) => set('status', v)} error={errors.status} />
                             <FormField label="Ledger ID" id="ledgerId" value={form.ledgerId} onChange={(e) => set('ledgerId', e.target.value)} />
                         </div>

@@ -14,10 +14,9 @@ const menuItems = [
     {
         label: 'Masters', icon: Building2,
         children: [
-            { label: 'Item Master', active: true },
-            { label: 'Vendor Master', active: false },
-            { label: 'Customer Master', active: false },
-            { label: 'Employee Master', active: false },
+            { label: 'Company Master', path: '/masters/company' },
+            { label: 'Employee Master', path: '/masters/employees' },
+            { label: 'Contractor Master', path: '/masters/contractors' },
         ],
     },
     {
@@ -33,7 +32,7 @@ const menuItems = [
         children: [
             { label: 'Machines', path: '/production/machines', icon: Cog },
             { label: 'Processes', path: '/production/processes', icon: Settings },
-            { label: 'Service Jobs', path: '/production/service-jobs', icon: Briefcase },
+            { label: 'Vehicle Service Master', path: '/production/service-jobs', icon: Briefcase },
         ],
     },
     {
@@ -119,7 +118,11 @@ const Sidebar = ({ activePage, setActivePage }) => {
                                 {item.children.map((child) => (
                                     <button
                                         key={child.label}
-                                        className={`sidebar__subitem ${child.active ? 'sidebar__subitem--active' : ''}`}
+                                        className={`sidebar__subitem ${isActive(child.path) ? 'sidebar__subitem--active' : ''}`}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (child.path) navigate(child.path);
+                                        }}
                                     >
                                         <span className="sidebar__subitem-dot" />
                                         {child.label}

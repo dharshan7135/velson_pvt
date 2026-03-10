@@ -28,7 +28,21 @@ const ItemGroupMaster = () => {
     const openAdd = () => { setForm(emptyForm); setEditId(null); setErrors({}); setModal(true); };
     const openEdit = (row) => { setForm({ ...row }); setEditId(row.id); setErrors({}); setModal(true); };
     const close = () => setModal(false);
-    const set = (f, v) => setForm((p) => ({ ...p, [f]: v }));
+    const set = (f, v) => {
+        setForm((p) => ({ ...p, [f]: v }));
+        setErrors(prev => {
+            const e = { ...prev };
+            if (f === 'group') {
+                if (!(v || '').trim()) e.group = 'Required';
+                else delete e.group;
+            }
+            if (f === 'storeName') {
+                if (!v) e.storeName = 'Required';
+                else delete e.storeName;
+            }
+            return e;
+        });
+    };
 
     const validate = () => {
         const e = {};

@@ -35,21 +35,125 @@ const EmployeeMaster = () => {
     const deptOptions = state.references.filter(r => r.referenceType === 'Department').map(r => ({ label: r.description, value: r.description }));
     const designOptions = state.references.filter(r => r.referenceType === 'Designation').map(r => ({ label: r.description, value: r.description }));
     const companyOptions = state.companies.map(c => ({ label: c.fullName, value: c.companyCode }));
+    const contractPersonOptions = state.contractors.map(c => ({ label: c.contractorName, value: c.contractorName }));
 
     const openAdd = () => { setForm(emptyForm); setEditId(null); setErrors({}); setModal(true); };
     const openEdit = (row) => { setForm({ ...row }); setEditId(row.id); setErrors({}); setModal(true); };
     const close = () => setModal(false);
-    const set = (field, val) => setForm((f) => ({ ...f, [field]: val }));
+    const set = (field, val) => {
+        setForm((f) => ({ ...f, [field]: val }));
+
+        setErrors(prev => {
+            const e = { ...prev };
+
+            if (field === 'employeeCode') {
+                const v = (val || '').trim();
+                if (!v) e.employeeCode = 'Employee Code is required';
+                else if (!/^[A-Za-z0-9]+$/.test(v)) e.employeeCode = 'Must contain only alphanumeric characters';
+                else {
+                    const isDuplicate = state.employees.some(emp => emp.employeeCode.toLowerCase() === v.toLowerCase() && emp.id !== editId);
+                    if (isDuplicate) e.employeeCode = 'Employee Code must be unique for each employee';
+                    else delete e.employeeCode;
+                }
+            }
+            if (field === 'employeeName') {
+                const v = (val || '').trim();
+                if (!v) e.employeeName = 'Employee Name is required';
+                else if (v.length < 3) e.employeeName = 'Minimum 3 characters required';
+                else if (!/^[A-Za-z\s]+$/.test(v)) e.employeeName = 'Only alphabetic characters and spaces allowed';
+                else delete e.employeeName;
+            }
+            if (field === 'address') {
+                if (val && val.trim().length > 255) e.address = 'Address is too long (max 255 characters)';
+                else if (val && !/^[A-Za-z0-9\s,.-]*$/.test(val)) e.address = 'Only alphanumeric characters and common punctuation allowed';
+                else delete e.address;
+            }
+            if (field === 'contactNo') {
+                if (val && !/^[6-9]\d{9}$/.test(val)) e.contactNo = 'Must be a valid 10-digit Indian mobile number';
+                else delete e.contactNo;
+            }
+            if (field === 'aadhaarNo') {
+                if (val && !/^\d{12}$/.test(val)) e.aadhaarNo = 'Must contain exactly 12 numeric digits';
+                else delete e.aadhaarNo;
+            }
+            if (['department', 'designation', 'companyName', 'joinDate'].includes(field)) {
+                if (!val) e[field] = `${field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1')} is required`;
+                else delete e[field];
+            }
+            if (field === 'contractPerson') {
+                delete e.contractPerson;
+            }
+            if (field === 'emailId') {
+                if (val && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) e.emailId = 'Invalid email format';
+                else delete e.emailId;
+            }
+            if (field === 'relievingDate') {
+                if (val && form.joinDate && new Date(val) < new Date(form.joinDate)) e.relievingDate = 'Relieving date must not be earlier than Join date';
+                else delete e.relievingDate;
+            }
+
+            return e;
+        });
+    };
 
     const validate = () => {
         const e = {};
-        if (!form.employeeCode.trim()) e.employeeCode = 'Required';
-        if (!form.employeeName.trim()) e.employeeName = 'Required';
-        if (!form.department) e.department = 'Required';
-        if (!form.designation) e.designation = 'Required';
-        if (!form.companyName) e.companyName = 'Required';
-        if (form.aadhaarNo && form.aadhaarNo.length !== 12) e.aadhaarNo = 'Must be 12 digits';
-        if (form.contactNo && form.contactNo.length !== 10) e.contactNo = 'Must be 10 digits';
+
+        // Employee Code
+        if (!form.employeeCode?.trim()) e.employeeCode = 'Employee Code is required';
+        else if (!/^[A-Za-z0-9]+$/.test(form.employeeCode.trim())) e.employeeCode = 'Must contain only alphanumeric characters';
+        else {
+            const isDuplicate = state.employees.some(emp =>
+                emp.employeeCode.toLowerCase() === form.employeeCode.trim().toLowerCase() &&
+                emp.id !== editId
+            );
+            if (isDuplicate) e.employeeCode = 'Employee Code must be unique for each employee';
+        }
+
+        // Employee Name
+        if (!form.employeeName?.trim()) e.employeeName = 'Employee Name is required';
+        else if (form.employeeName.trim().length < 3) e.employeeName = 'Minimum 3 characters required';
+        else if (!/^[A-Za-z\s]+$/.test(form.employeeName.trim())) e.employeeName = 'Only alphabetic characters and spaces allowed';
+
+        // Address
+        if (form.address && form.address.trim().length > 255) {
+            e.address = 'Address is too long (max 255 characters)';
+        } else if (form.address && !/^[A-Za-z0-9\s,.-]*$/.test(form.address)) {
+            e.address = 'Only alphanumeric characters and common punctuation allowed';
+        }
+
+        // Contact Number
+        if (form.contactNo && !/^[6-9]\d{9}$/.test(form.contactNo)) {
+            e.contactNo = 'Must be a valid 10-digit Indian mobile number';
+        }
+
+        // Aadhaar Number
+        if (form.aadhaarNo && !/^\d{12}$/.test(form.aadhaarNo)) {
+            e.aadhaarNo = 'Must contain exactly 12 numeric digits';
+        }
+
+        // Join Date & Relieving Date
+        if (!form.joinDate) e.joinDate = 'Join Date is required';
+        else if (form.joinDate && form.relievingDate) {
+            if (new Date(form.relievingDate) < new Date(form.joinDate)) {
+                e.relievingDate = 'Relieving date must not be earlier than Join date';
+            }
+        }
+
+        // Department & Designation
+        if (!form.department) e.department = 'Department is required';
+        if (!form.designation) e.designation = 'Designation is required';
+
+        // Company Name
+        if (!form.companyName) e.companyName = 'Company Name is required';
+
+        // Contract Person validation removed to allow standard punctuation
+
+        // Email ID
+        if (form.emailId && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.emailId)) {
+            e.emailId = 'Invalid email format';
+        }
+
         setErrors(e);
         return Object.keys(e).length === 0;
     };
@@ -80,15 +184,15 @@ const EmployeeMaster = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                         <FormField label="Employee Code" id="employeeCode" required value={form.employeeCode} onChange={(e) => set('employeeCode', e.target.value)} error={errors.employeeCode} />
                         <FormField label="Employee Name" id="employeeName" required value={form.employeeName} onChange={(e) => set('employeeName', e.target.value)} error={errors.employeeName} />
-                        <FormField label="Address" id="address" value={form.address} onChange={(e) => set('address', e.target.value)} className="md:col-span-2" />
+                        <FormField label="Address" id="address" value={form.address} onChange={(e) => set('address', e.target.value)} className="md:col-span-2" error={errors.address} />
                         <FormField label="Contact No" id="contactNo" value={form.contactNo} onChange={(e) => set('contactNo', e.target.value)} error={errors.contactNo} />
                         <FormField label="Aadhaar No" id="aadhaarNo" value={form.aadhaarNo} onChange={(e) => set('aadhaarNo', e.target.value)} error={errors.aadhaarNo} />
-                        <FormField label="Join Date" id="joinDate" type="date" value={form.joinDate} onChange={(e) => set('joinDate', e.target.value)} />
-                        <FormField label="Relieving Date" id="relievingDate" type="date" value={form.relievingDate} onChange={(e) => set('relievingDate', e.target.value)} />
+                        <FormField label="Join Date" id="joinDate" type="date" required value={form.joinDate} onChange={(e) => set('joinDate', e.target.value)} error={errors.joinDate} />
+                        <FormField label="Relieving Date" id="relievingDate" type="date" value={form.relievingDate} onChange={(e) => set('relievingDate', e.target.value)} error={errors.relievingDate} />
                         <DropdownWithCreate label="Department" id="department" required options={deptOptions} value={form.department} onChange={(v) => set('department', v)} onAdd={() => setAddModal({ open: true, field: 'department', value: '' })} error={errors.department} />
                         <DropdownWithCreate label="Designation" id="designation" required options={designOptions} value={form.designation} onChange={(v) => set('designation', v)} onAdd={() => setAddModal({ open: true, field: 'designation', value: '' })} error={errors.designation} />
-                        <FormField label="Contract Person" id="contractPerson" value={form.contractPerson} onChange={(e) => set('contractPerson', e.target.value)} />
-                        <FormField label="Email-ID" id="emailId" type="email" value={form.emailId} onChange={(e) => set('emailId', e.target.value)} />
+                        <DropdownWithCreate label="Contract Person" id="contractPerson" options={contractPersonOptions} value={form.contractPerson} onChange={(v) => set('contractPerson', v)} error={errors.contractPerson} />
+                        <FormField label="Email-ID" id="emailId" type="email" value={form.emailId} onChange={(e) => set('emailId', e.target.value)} error={errors.emailId} />
                         <DropdownWithCreate label="Company Name" id="companyName" required options={companyOptions} value={form.companyName} onChange={(v) => set('companyName', v)} error={errors.companyName} />
                     </div>
                     <div className="flex justify-end gap-3 pt-4">

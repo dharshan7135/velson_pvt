@@ -19,6 +19,7 @@ const initialState = {
     referenceGroups: [...mock.referenceGroups],
     references: [...mock.references],
     taxes: [...mock.taxes],
+    dropdownState: {}, // Stores custom additions, edits, and deletions for all DropdownWithCreate instances
 };
 
 function reducer(state, action) {
@@ -40,6 +41,13 @@ function reducer(state, action) {
             const { entity, id } = action.payload;
             return { ...state, [entity]: state[entity].filter((r) => r.id !== id) };
         }
+        case 'UPDATE_DROPDOWN': {
+            const { key, data } = action.payload;
+            return {
+                ...state,
+                dropdownState: { ...state.dropdownState, [key]: data }
+            };
+        }
         default:
             return state;
     }
@@ -51,9 +59,10 @@ export function AppProvider({ children }) {
     const addRecord = (entity, data) => dispatch({ type: 'ADD_RECORD', payload: { entity, data } });
     const updateRecord = (entity, id, data) => dispatch({ type: 'UPDATE_RECORD', payload: { entity, id, data } });
     const deleteRecord = (entity, id) => dispatch({ type: 'DELETE_RECORD', payload: { entity, id } });
+    const updateDropdown = (key, data) => dispatch({ type: 'UPDATE_DROPDOWN', payload: { key, data } });
 
     return (
-        <AppContext.Provider value={{ state, addRecord, updateRecord, deleteRecord }}>
+        <AppContext.Provider value={{ state, addRecord, updateRecord, deleteRecord, updateDropdown }}>
             {children}
         </AppContext.Provider>
     );

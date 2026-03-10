@@ -12,7 +12,7 @@ const routeLabels = {
     '/inventory/characteristics': ['Inventory', 'Characteristics'],
     '/production/machines': ['Production', 'Machines'],
     '/production/processes': ['Production', 'Processes'],
-    '/production/service-jobs': ['Production', 'Service Jobs'],
+    '/production/service-jobs': ['Production', 'Vehicle Service Master'],
     '/finance/accounts': ['Finance', 'Accounts'],
     '/finance/groups': ['Finance', 'Groups'],
     '/finance/taxes': ['Finance', 'Taxes'],
