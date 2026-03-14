@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import logo from '../assets/logo.png';
 import {
     LayoutDashboard, Building2, Users, Handshake,
     Package, Layers, BarChart3, Factory, Cog, Briefcase,
@@ -79,10 +80,7 @@ const Sidebar = ({ activePage, setActivePage }) => {
         >
             {/* Brand */}
             <div className="sidebar__brand">
-                <div className="sidebar__logo">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#0097A7] to-[#00BCD4] flex items-center justify-center text-white font-bold text-sm">V</div>
-                </div>
-                <span className="sidebar__brand-text">Velson ERP</span>
+                <img src={logo} alt="Velson" className="sidebar__logo-img" />
             </div>
 
             {/* Nav */}
