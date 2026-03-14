@@ -302,3 +302,135 @@ export const machineStatusColors = {
 export const alerts = productionAlerts;
 
 export const kpiData = productionFlowKPIs;
+
+// ─── Additional legacy exports (used by other pages) ───
+
+export const dailyProductionTrend = [
+  { day: 'Mon', TMTBars: 420, SteelPipes: 180, Hardware: 95, Structural: 210 },
+  { day: 'Tue', TMTBars: 450, SteelPipes: 195, Hardware: 102, Structural: 225 },
+  { day: 'Wed', TMTBars: 435, SteelPipes: 170, Hardware: 88, Structural: 198 },
+  { day: 'Thu', TMTBars: 480, SteelPipes: 210, Hardware: 110, Structural: 245 },
+  { day: 'Fri', TMTBars: 460, SteelPipes: 200, Hardware: 105, Structural: 230 },
+  { day: 'Sat', TMTBars: 390, SteelPipes: 160, Hardware: 78, Structural: 185 },
+  { day: 'Sun', TMTBars: 320, SteelPipes: 130, Hardware: 60, Structural: 150 },
+];
+
+export const productCategoryOutput = [
+  { name: 'TMT Bars', value: 2955, color: '#10B981' },
+  { name: 'Steel Pipes', value: 1245, color: '#3B82F6' },
+  { name: 'Hardware', value: 638, color: '#F59E0B' },
+  { name: 'Structural Steel', value: 1443, color: '#8B5CF6' },
+];
+
+export const machineUtilizationData = [
+  { machine: 'Mill #1', utilization: 92 },
+  { machine: 'Mill #2', utilization: 88 },
+  { machine: 'Pipe Line', utilization: 76 },
+  { machine: 'Cutter', utilization: 45 },
+  { machine: 'Furnace #1', utilization: 95 },
+  { machine: 'Furnace #2', utilization: 0 },
+  { machine: 'Ladle', utilization: 89 },
+  { machine: 'Caster', utilization: 82 },
+];
+
+export const efficiencyGaugeData = { value: 94.2, target: 96 };
+
+export const revenueData = [
+  { date: 'Mar 1', revenue: 520000, orders: 12 },
+  { date: 'Mar 2', revenue: 680000, orders: 15 },
+  { date: 'Mar 3', revenue: 450000, orders: 10 },
+  { date: 'Mar 4', revenue: 720000, orders: 18 },
+  { date: 'Mar 5', revenue: 890000, orders: 22 },
+  { date: 'Mar 6', revenue: 760000, orders: 19 },
+  { date: 'Mar 7', revenue: 610000, orders: 14 },
+  { date: 'Mar 8', revenue: 940000, orders: 24 },
+  { date: 'Mar 9', revenue: 830000, orders: 20 },
+  { date: 'Mar 10', revenue: 1050000, orders: 28 },
+  { date: 'Mar 11', revenue: 980000, orders: 25 },
+  { date: 'Mar 12', revenue: 1120000, orders: 30 },
+  { date: 'Mar 13', revenue: 870000, orders: 21 },
+];
+
+export const salesByRegion = [
+  { region: 'Andhra Pradesh', sales: 4800000 },
+  { region: 'Telangana', sales: 3600000 },
+  { region: 'Tamil Nadu', sales: 2900000 },
+  { region: 'Karnataka', sales: 2200000 },
+  { region: 'Maharashtra', sales: 1800000 },
+  { region: 'Others', sales: 3120000 },
+];
+
+export const salesTrend = [
+  { month: 'Oct', sales: 14200000 },
+  { month: 'Nov', sales: 15800000 },
+  { month: 'Dec', sales: 13900000 },
+  { month: 'Jan', sales: 16500000 },
+  { month: 'Feb', sales: 17200000 },
+  { month: 'Mar', sales: 18420000 },
+];
+
+export const supplyChainData = [
+  { supplier: 'Tata Steel Scrap', material: 'Scrap Iron', status: 'on-time', eta: '2 days', quantity: '500 tons' },
+  { supplier: 'SAIL Billets', material: 'Billets', status: 'delayed', eta: '5 days', quantity: '300 tons' },
+  { supplier: 'JSW Alloys', material: 'Ferro Alloys', status: 'on-time', eta: '1 day', quantity: '80 tons' },
+  { supplier: 'Coal India', material: 'Met Coal', status: 'on-time', eta: '3 days', quantity: '200 tons' },
+  { supplier: 'Rashtriya Ispat', material: 'Pig Iron', status: 'at-risk', eta: '7 days', quantity: '150 tons' },
+];
+
+export const inventoryCards = [
+  { label: 'Raw Material Stock', value: '2,450 tons', change: -8.2, status: 'warning', icon: 'Layers' },
+  { label: 'Warehouse Utilization', value: '78%', change: 3.1, status: 'healthy', icon: 'Warehouse' },
+  { label: 'Reorder Alerts', value: '3 items', change: 0, status: 'critical', icon: 'AlertTriangle' },
+  { label: 'Inventory Turnover', value: '6.2x', change: 1.5, status: 'healthy', icon: 'RefreshCw' },
+];
+
+export const inventoryByCategory = [
+  { category: 'Scrap Iron', stock: 320, capacity: 1800 },
+  { category: 'Billets', stock: 680, capacity: 1200 },
+  { category: 'Wire Rods', stock: 450, capacity: 800 },
+  { category: 'Pig Iron', stock: 280, capacity: 600 },
+  { category: 'Alloys', stock: 120, capacity: 300 },
+  { category: 'Coal', stock: 890, capacity: 1500 },
+];
+
+export const warehouseUsage = [
+  { zone: 'Zone A — Raw', used: 85, total: 100 },
+  { zone: 'Zone B — WIP', used: 62, total: 100 },
+  { zone: 'Zone C — Finished', used: 91, total: 100 },
+  { zone: 'Zone D — Spare', used: 34, total: 100 },
+];
+
+export const stockDepletion = [
+  { day: 'Day 1', scrapIron: 320, billets: 680, wireRods: 450 },
+  { day: 'Day 5', scrapIron: 260, billets: 580, wireRods: 400 },
+  { day: 'Day 10', scrapIron: 190, billets: 470, wireRods: 340 },
+  { day: 'Day 15', scrapIron: 120, billets: 350, wireRods: 270 },
+  { day: 'Day 20', scrapIron: 60, billets: 230, wireRods: 190 },
+  { day: 'Day 25', scrapIron: 10, billets: 120, wireRods: 110 },
+  { day: 'Day 30', scrapIron: 0, billets: 20, wireRods: 40 },
+];
+
+export const timelineEvents = [
+  { time: '10:45 AM', event: 'Invoice #1024 created for Andhra Steel Corp', type: 'finance', icon: 'FileText' },
+  { time: '10:40 AM', event: 'TMT Bar batch #B-4421 quality approved', type: 'production', icon: 'CheckCircle' },
+  { time: '10:30 AM', event: 'Machine #22 maintenance started — Est. 4 hrs', type: 'maintenance', icon: 'Wrench' },
+  { time: '10:25 AM', event: 'New order received — 200 tons TMT from Chennai Builders', type: 'sales', icon: 'ShoppingCart' },
+  { time: '10:20 AM', event: 'Purchase order #PO-881 created for scrap iron', type: 'procurement', icon: 'FileInput' },
+  { time: '10:15 AM', event: 'Furnace #1 temperature adjusted to 1580°C', type: 'production', icon: 'Thermometer' },
+  { time: '10:05 AM', event: 'Inventory stock updated — Wire Rods +120 tons', type: 'inventory', icon: 'Package' },
+  { time: '09:55 AM', event: 'Shift B crew checked in — 42 operators', type: 'hr', icon: 'Users' },
+  { time: '09:45 AM', event: 'Conveyor belt speed optimized on Line 3', type: 'production', icon: 'Activity' },
+  { time: '09:30 AM', event: 'Daily safety briefing completed', type: 'safety', icon: 'Shield' },
+];
+
+export const commandCenterNav = [
+  { id: 'command-center', label: 'Command Center', icon: 'LayoutDashboard', path: '/' },
+  { id: 'production', label: 'Production Monitoring', icon: 'Factory', path: '/production' },
+  { id: 'factory-3d', label: '3D Factory View', icon: 'Box', path: '/factory-3d' },
+  { id: 'machine-health', label: 'Machine Health', icon: 'HeartPulse', path: '/machine-health' },
+  { id: 'inventory', label: 'Inventory Intelligence', icon: 'Package', path: '/inventory' },
+  { id: 'supply-chain', label: 'Supply Chain', icon: 'Truck', path: '/supply-chain' },
+  { id: 'sales', label: 'Sales Analytics', icon: 'BarChart3', path: '/sales' },
+  { id: 'timeline', label: 'Activity Timeline', icon: 'Clock', path: '/timeline' },
+  { id: 'alerts', label: 'Incident Alerts', icon: 'AlertTriangle', path: '/alerts' },
+];
