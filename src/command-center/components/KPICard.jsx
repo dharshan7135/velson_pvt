@@ -2,10 +2,10 @@ import React, { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
   TrendingUp, Wallet, Factory, Gauge, Cog, Package,
-  ArrowUpRight, ArrowDownRight,
+  ArrowUpRight, ArrowDownRight, CheckCircle, RefreshCw, Shield, Award,
 } from 'lucide-react';
 
-const iconMap = { TrendingUp, Wallet, Factory, Gauge, Cog, Package };
+const iconMap = { TrendingUp, Wallet, Factory, Gauge, Cog, Package, CheckCircle, RefreshCw, Shield, Award };
 
 function AnimatedNumber({ value, prefix = '', suffix = '', duration = 2000 }) {
   const [display, setDisplay] = useState(0);
