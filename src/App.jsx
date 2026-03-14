@@ -19,6 +19,16 @@ import TaxMaster from './pages/finance/TaxMaster';
 import ReferenceGroupMaster from './pages/config/ReferenceGroupMaster';
 import ReferenceMaster from './pages/config/ReferenceMaster';
 import SupplierDetails from './pages/config/SupplierDetails';
+import CommandDashboard from './command-center/pages/CommandDashboard';
+import ProductionMonitoring from './command-center/pages/ProductionMonitoring';
+import Factory3DView from './command-center/pages/Factory3DView';
+import MachineHealth from './command-center/pages/MachineHealth';
+import InventoryIntelligence from './command-center/pages/InventoryIntelligence';
+import SupplyChain from './command-center/pages/SupplyChain';
+import SalesAnalytics from './command-center/pages/SalesAnalytics';
+import ActivityTimeline from './command-center/pages/ActivityTimeline';
+import IncidentAlerts from './command-center/pages/IncidentAlerts';
+import './command-center/CommandCenter.css';
 import './App.css';
 
 function App() {
@@ -30,7 +40,15 @@ function App() {
           <TopNavbar />
           <div className="app-content">
             <Routes>
-              <Route path="/" element={<Dashboard />} />
+              <Route path="/" element={<CommandDashboard />} />
+              <Route path="/production" element={<ProductionMonitoring />} />
+              <Route path="/factory-3d" element={<Factory3DView />} />
+              <Route path="/machine-health" element={<MachineHealth />} />
+              <Route path="/inventory-intel" element={<InventoryIntelligence />} />
+              <Route path="/supply-chain" element={<SupplyChain />} />
+              <Route path="/sales-analytics" element={<SalesAnalytics />} />
+              <Route path="/timeline" element={<ActivityTimeline />} />
+              <Route path="/alerts" element={<IncidentAlerts />} />
               <Route path="/masters/company" element={<CompanyMaster />} />
               <Route path="/masters/employees" element={<EmployeeMaster />} />
               <Route path="/masters/contractors" element={<ContractorMaster />} />
