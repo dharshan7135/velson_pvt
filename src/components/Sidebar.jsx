@@ -14,9 +14,9 @@ const menuItems = [
     {
         label: 'Masters', icon: Building2,
         children: [
-            { label: 'Company', path: '/masters/company', icon: Building2 },
-            { label: 'Employees', path: '/masters/employees', icon: Users },
-            { label: 'Contractors', path: '/masters/contractors', icon: Handshake },
+            { label: 'Company Master', path: '/masters/company' },
+            { label: 'Employee Master', path: '/masters/employees' },
+            { label: 'Contractor Master', path: '/masters/contractors' },
         ],
     },
     {
@@ -32,7 +32,7 @@ const menuItems = [
         children: [
             { label: 'Machines', path: '/production/machines', icon: Cog },
             { label: 'Processes', path: '/production/processes', icon: Settings },
-            { label: 'Service Jobs', path: '/production/service-jobs', icon: Briefcase },
+            { label: 'Vehicle Service Master', path: '/production/service-jobs', icon: Briefcase },
         ],
     },
     {
@@ -53,7 +53,7 @@ const menuItems = [
     },
 ];
 
-const Sidebar = () => {
+const Sidebar = ({ activePage, setActivePage }) => {
     const [hovered, setHovered] = useState(false);
     const [expandedMenus, setExpandedMenus] = useState(['Masters']);
     const location = useLocation();
@@ -117,9 +117,12 @@ const Sidebar = () => {
                             <div className="sidebar__submenu">
                                 {item.children.map((child) => (
                                     <button
-                                        key={child.path}
+                                        key={child.label}
                                         className={`sidebar__subitem ${isActive(child.path) ? 'sidebar__subitem--active' : ''}`}
-                                        onClick={() => navigate(child.path)}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (child.path) navigate(child.path);
+                                        }}
                                     >
                                         <span className="sidebar__subitem-dot" />
                                         {child.label}
