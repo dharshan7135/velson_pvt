@@ -10,9 +10,10 @@ import {
 import {
   productionFlowKPIs, productionStages, productProduction,
   wipTracker, machineContribution, inventoryFlow, inventoryFlowSteps,
-  bottlenecks, productionAlerts, productionEfficiency, eodSummary,
+  bottlenecks, productionEfficiency, eodSummary,
   digitalTwinStages,
 } from '../../data/commandCenterData';
+import { useAppContext } from '../../store/AppContext';
 import '../CommandCenter.css';
 
 // ── Animation Variants ──
@@ -535,13 +536,14 @@ function DigitalTwin({ stages }) {
               <div className="pf-twin__icon" style={{ background: `${s.color}15`, color: s.color }}>
                 <Icon size={20} />
               </div>
-              <span className="pf-twin__qty">{s.qty}</span>
-              <span className="pf-twin__name">{s.name}</span>
+              <div className="pf-twin__info">
+                <span className="pf-twin__qty">{s.qty}</span>
+                <span className="pf-twin__name">{s.name}</span>
+              </div>
             </motion.div>
             {i < stages.length - 1 && (
-              <motion.div className="pf-twin__connector" animate={{ y: [0, 4, 0] }} transition={{ repeat: Infinity, duration: 1.2, delay: i * 0.15 }}>
-                <span className="pf-twin__connector-line" />
-                <ChevronDown size={16} style={{ color: '#b8860b' }} />
+              <motion.div className="pf-twin__connector" animate={{ x: [0, 4, 0] }} transition={{ repeat: Infinity, duration: 1.2, delay: i * 0.15 }}>
+                <ArrowRight size={18} style={{ color: '#b8860b' }} />
               </motion.div>
             )}
           </React.Fragment>
@@ -556,6 +558,9 @@ function DigitalTwin({ stages }) {
 // ══════════════════════════════════════════════
 export default function CommandDashboard() {
   const [searchProduct, setSearchProduct] = useState('');
+  const { state } = useAppContext();
+  const alerts = state.emergencyAlerts || [];
+
   const filteredProducts = productProduction.filter(p =>
     p.name.toLowerCase().includes(searchProduct.toLowerCase())
   );
@@ -629,9 +634,9 @@ export default function CommandDashboard() {
           <BottleneckPanel data={bottlenecks} />
         </div>
         <div className="pf-split-right">
-          <SectionHeader icon={AlertTriangle} title="Emergency Alerts" badge={`${productionAlerts.length}`} />
+          <SectionHeader icon={AlertTriangle} title="Emergency Alerts" badge={`${alerts.length}`} />
           <div className="pf-alert-scroll">
-            {productionAlerts.map((a, i) => <ProdAlertCard key={a.id} alert={a} index={i} />)}
+            {alerts.map((a, i) => <ProdAlertCard key={a.id} alert={a} index={i} />)}
           </div>
         </div>
       </motion.section>

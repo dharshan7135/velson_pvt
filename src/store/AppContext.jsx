@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
+import { productionAlerts } from '../data/commandCenterData';
 
 const AppContext = createContext();
 
@@ -27,6 +28,7 @@ const initialState = {
     references: [],
     taxes: [],
     dropdownState: {},
+    emergencyAlerts: productionAlerts || [], // Load initial alerts
     loading: true,
     error: null,
 };
@@ -70,6 +72,12 @@ function reducer(state, action) {
             return {
                 ...state,
                 dropdownState: { ...state.dropdownState, [key]: data },
+            };
+        }
+        case 'DISMISS_ALERT': {
+            return {
+                ...state,
+                emergencyAlerts: state.emergencyAlerts.filter(a => a.id !== action.payload),
             };
         }
         default:

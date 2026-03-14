@@ -242,6 +242,41 @@ export const productionAlerts = [
     time: '2 hrs ago',
     actions: ['Track Shipment', 'Notify Procurement'],
   },
+  {
+    id: 'PA-006', severity: 'critical',
+    title: 'Power Grid Fluctuation Detected',
+    message: 'Voltage drop across Main Sector B. Backup generators engaged automatically to sustain rolling mill operations.',
+    time: '3 hrs ago', machineId: 'SYS-PWR',
+    actions: ['Check Generators', 'Contact Grid Support'],
+  },
+  {
+    id: 'PA-007', severity: 'warning',
+    title: 'Inventory Storage Capacity High',
+    message: 'Warehouse A is at 94% capacity. Consider rerouting incoming finished goods to Warehouse B.',
+    time: '4 hrs ago',
+    actions: ['View Storage', 'Reroute Logistics'],
+  },
+  {
+    id: 'PA-008', severity: 'critical',
+    title: 'Safety Protocol Violation',
+    message: 'Unauthorized personnel detected in high-temperature restricted zone near Furnace M-03. Area locked down.',
+    time: '5 hrs ago',
+    actions: ['View Camera Feed', 'Dispatch Security'],
+  },
+  {
+    id: 'PA-009', severity: 'info',
+    title: 'Routine Maintenance Upcoming',
+    message: 'Rolling Mill #1 scheduled for targeted quarterly maintenance in 48 hours.',
+    time: '1 day ago', machineId: 'M-01',
+    actions: ['Review Schedule', 'Assign Crew'],
+  },
+  {
+    id: 'PA-010', severity: 'warning',
+    title: 'Network Communication Latency',
+    message: 'High latency (450ms) detecting sensor telemetry from Cutting Machine M-05. Data sync delayed.',
+    time: '1 day ago', machineId: 'M-05',
+    actions: ['Run Diagnostics', 'Reset Sensor'],
+  }
 ];
 
 // ─── 9. Production Efficiency ───
@@ -302,3 +337,125 @@ export const machineStatusColors = {
 export const alerts = productionAlerts;
 
 export const kpiData = productionFlowKPIs;
+
+// ─── Daily Production Trend (for ProductionMonitoring page) ───
+export const dailyProductionTrend = [
+  { day: 'Mon', output: 410, target: 450 },
+  { day: 'Tue', output: 435, target: 450 },
+  { day: 'Wed', output: 428, target: 450 },
+  { day: 'Thu', output: 460, target: 450 },
+  { day: 'Fri', output: 442, target: 450 },
+  { day: 'Sat', output: 390, target: 400 },
+  { day: 'Sun', output: 320, target: 350 },
+];
+
+// ─── Product Category Output ───
+export const productCategoryOutput = [
+  { category: 'TMT Bars', output: 252, color: '#10B981' },
+  { category: 'Steel Pipes', output: 190, color: '#3B82F6' },
+  { category: 'Hardware', output: 118, color: '#F59E0B' },
+  { category: 'Structural', output: 158, color: '#8B5CF6' },
+  { category: 'Wire Rods', output: 100, color: '#EC4899' },
+];
+
+// ─── Machine Utilization Data ───
+export const machineUtilizationData = [
+  { machine: 'M-01', utilization: 86 },
+  { machine: 'M-02', utilization: 72 },
+  { machine: 'M-03', utilization: 95 },
+  { machine: 'M-04', utilization: 68 },
+  { machine: 'M-05', utilization: 60 },
+  { machine: 'M-07', utilization: 82 },
+  { machine: 'M-08', utilization: 78 },
+  { machine: 'M-09', utilization: 55 },
+];
+
+// ─── Efficiency Gauge Data ───
+export const efficiencyGaugeData = {
+  value: 88.4,
+  target: 92,
+};
+
+// ─── Supply Chain Data ───
+export const supplyChainData = [
+  { supplier: 'SAIL Billets', material: 'Steel Billets', status: 'In Transit', eta: 'Mar 18', qty: '120 tons', color: '#3B82F6' },
+  { supplier: 'Tata Steel', material: 'HR Coils', status: 'Delivered', eta: 'Mar 12', qty: '80 tons', color: '#10B981' },
+  { supplier: 'JSW Steel', material: 'Wire Rods', status: 'Ordered', eta: 'Mar 22', qty: '60 tons', color: '#F59E0B' },
+  { supplier: 'Vedanta Metals', material: 'Scrap Iron', status: 'Delayed', eta: 'Mar 20', qty: '200 tons', color: '#DC2626' },
+  { supplier: 'Hindalco', material: 'Aluminium Ingots', status: 'In Transit', eta: 'Mar 16', qty: '45 tons', color: '#8B5CF6' },
+];
+
+// ─── Sales / Revenue Data ───
+export const revenueData = {
+  totalRevenue: '₹4.82 Cr',
+  monthlyGrowth: 12.4,
+  ordersCompleted: 38,
+  pendingOrders: 12,
+};
+
+export const salesByRegion = [
+  { region: 'South India', revenue: 1850000, orders: 14, color: '#10B981' },
+  { region: 'West India', revenue: 1420000, orders: 10, color: '#3B82F6' },
+  { region: 'North India', revenue: 980000, orders: 8, color: '#F59E0B' },
+  { region: 'East India', revenue: 570000, orders: 6, color: '#8B5CF6' },
+];
+
+export const salesTrend = [
+  { month: 'Oct', revenue: 3200000 },
+  { month: 'Nov', revenue: 3600000 },
+  { month: 'Dec', revenue: 3900000 },
+  { month: 'Jan', revenue: 4100000 },
+  { month: 'Feb', revenue: 4500000 },
+  { month: 'Mar', revenue: 4820000 },
+];
+
+// ─── Inventory Intelligence ───
+export const inventoryCards = [
+  { label: 'Total Stock', value: '1,275 tons', change: '+3.2%', trend: 'up', color: '#047857' },
+  { label: 'Low Stock Items', value: '4', change: '+1', trend: 'down', color: '#DC2626' },
+  { label: 'Reorder Pending', value: '3', change: '0', trend: 'neutral', color: '#F59E0B' },
+  { label: 'Stock Turnover', value: '6.2x', change: '+0.4', trend: 'up', color: '#3B82F6' },
+];
+
+export const inventoryByCategory = [
+  { category: 'Raw Material', stock: 820, unit: 'tons', color: '#78716c' },
+  { category: 'WIP', stock: 145, unit: 'tons', color: '#b8860b' },
+  { category: 'Finished Goods', stock: 310, unit: 'tons', color: '#047857' },
+];
+
+export const warehouseUsage = [
+  { warehouse: 'Warehouse A', capacity: 500, used: 420, color: '#3B82F6' },
+  { warehouse: 'Warehouse B', capacity: 400, used: 310, color: '#10B981' },
+  { warehouse: 'Yard C', capacity: 300, used: 280, color: '#F59E0B' },
+];
+
+export const stockDepletion = [
+  { material: 'Scrap Iron', daysLeft: 5, severity: 'critical' },
+  { material: 'Steel Billets', daysLeft: 12, severity: 'warning' },
+  { material: 'Wire Rods', daysLeft: 18, severity: 'ok' },
+  { material: 'HR Coils', daysLeft: 25, severity: 'ok' },
+];
+
+// ─── Activity Timeline ───
+export const timelineEvents = [
+  { id: 1, time: '1:15 PM', title: 'Production batch #B-4420 completed', type: 'success', detail: 'TMT Bars — 252 tons dispatched to Warehouse A' },
+  { id: 2, time: '12:48 PM', title: 'Quality check failed — Batch #B-4419', type: 'error', detail: '12 units rejected at QC stage for tensile strength' },
+  { id: 3, time: '12:30 PM', title: 'Machine M-03 temperature alert', type: 'warning', detail: 'Induction Furnace at 1,640°C — auto cooldown initiated' },
+  { id: 4, time: '11:45 AM', title: 'New purchase order created — PO-2847', type: 'info', detail: 'Order for 200 tons scrap iron from Vedanta Metals' },
+  { id: 5, time: '11:00 AM', title: 'Shift change — Team B started', type: 'info', detail: '24 operators clocked in for afternoon shift' },
+  { id: 6, time: '10:30 AM', title: 'Machine M-10 taken offline', type: 'warning', detail: 'Bending Machine — unscheduled maintenance for motor issue' },
+  { id: 7, time: '9:15 AM', title: 'Rolling Mill #1 output exceeded target', type: 'success', detail: 'M-01 produced 420 kg — 5% above daily target' },
+];
+
+// ─── Command Center Navigation ───
+export const commandCenterNav = [
+  { label: 'Command Dashboard', path: '/', icon: 'LayoutDashboard' },
+  { label: 'Production', path: '/production', icon: 'Factory' },
+  { label: 'Factory 3D', path: '/factory-3d', icon: 'Box' },
+  { label: 'Machine Health', path: '/machine-health', icon: 'Cog' },
+  { label: 'Inventory', path: '/inventory-intel', icon: 'Package' },
+  { label: 'Supply Chain', path: '/supply-chain', icon: 'Truck' },
+  { label: 'Sales', path: '/sales-analytics', icon: 'BarChart3' },
+  { label: 'Timeline', path: '/timeline', icon: 'Clock' },
+  { label: 'Alerts', path: '/alerts', icon: 'AlertTriangle' },
+];
