@@ -10,7 +10,7 @@ export default defineConfig({
 
   preview: {
     allowedHosts: [
-      "velson-backend.onrender.com",
+      "velson-pvt.onrender.com",
       "velson-backend-72n8.onrender.com"
     ]
   },
