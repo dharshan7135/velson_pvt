@@ -6,7 +6,7 @@ export default defineConfig({
 
   plugins: [react(), tailwindcss()],
 
-  // for local development
+  // local development
   server: {
     proxy: {
       '/api': {
@@ -16,11 +16,16 @@ export default defineConfig({
     }
   },
 
-  // for render deployment
+  // render deployment
   preview: {
     host: true,
     port: process.env.PORT || 10000,
-    allowedHosts: "all",
+
+    // FIX: allowedHosts must be array
+    allowedHosts: [
+      "velson-backend.onrender.com",
+      "localhost"
+    ],
 
     proxy: {
       '/api': {
