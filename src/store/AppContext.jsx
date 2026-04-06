@@ -3,7 +3,7 @@ import { productionAlerts } from '../data/commandCenterData';
 
 const AppContext = createContext();
 
-const API_BASE = '/api';
+const API_BASE = `${import.meta.env.VITE_API_URL}/api`;
 
 const ENTITIES = [
     'companies', 'employees', 'contractors', 'suppliers', 'machines',
