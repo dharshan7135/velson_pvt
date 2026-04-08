@@ -4,11 +4,12 @@ import {
     LayoutDashboard, Building2, Users, Handshake,
     Package, Layers, BarChart3, Factory, Cog, Briefcase,
     Landmark, BookOpen, Receipt, Settings, Link2, FileText,
-    Truck, ChevronDown, ShoppingCart, Upload, Activity, ClipboardList, ListTree,
+    Truck, ChevronDown, ShoppingCart, Upload, Activity, ClipboardList, ListTree, PenTool,
     ArrowRightLeft, CalendarRange, Banknote, FileOutput, ClipboardCheck, List, CheckCheck, ListChecks,
     Copy, ListOrdered, FileInput, DoorOpen, PackageCheck, History, RotateCcw,
-    ArrowDownToLine, ArrowUpFromLine, PenLine, Trash2, BookOpen, ListPlus, LayoutList, MessageSquareWarning,
-    RefreshCw, FileSearch, Wrench, AlertTriangle,
+    ArrowDownToLine, ArrowUpFromLine, PenLine, Trash2, ListPlus, LayoutList, MessageSquareWarning,
+    RefreshCw, FileSearch, Wrench, AlertTriangle, Car, Hammer, FileClock,
+    HardDrive, FlaskConical, Table,
 } from 'lucide-react';
 
 const menuItems = [
@@ -185,6 +186,106 @@ const menuItems = [
         ],
     },
     {
+        label: 'Service Booking', icon: CalendarRange,
+        children: [
+            { label: 'Booking Master', path: '/service/booking-master', icon: CalendarRange },
+            { label: 'Service Details', path: '/service/booking-details', icon: Wrench },
+            { label: 'Spare List', path: '/service/booking-spares', icon: Package },
+        ],
+    },
+    {
+        label: 'Service Order', icon: ShoppingCart,
+        children: [
+            { label: 'Service Order', path: '/service/order', icon: ShoppingCart },
+            { label: 'Order Details', path: '/service/order-details', icon: ListOrdered },
+            { label: 'Service Request', path: '/service/request', icon: ClipboardList },
+        ],
+    },
+    {
+        label: 'Service Transactions', icon: Activity,
+        children: [
+            { label: 'Service Transaction', path: '/service/transaction', icon: Activity },
+            { label: 'Part Spare List', path: '/service/part-spares', icon: Layers },
+        ],
+    },
+    {
+        label: 'Service Bill', icon: Receipt,
+        children: [
+            { label: 'Bill Master', path: '/service/bill-master', icon: Receipt },
+            { label: 'Bill Transaction', path: '/service/bill-trans', icon: ArrowRightLeft },
+            { label: 'Labour Charges', path: '/service/bill-labour', icon: Hammer },
+        ],
+    },
+    {
+        label: 'Temp Service Bill', icon: FileClock,
+        children: [
+            { label: 'Temp Bill Master', path: '/service/temp-bill-master', icon: FileClock },
+            { label: 'Temp Bill Trans', path: '/service/temp-bill-trans', icon: FileInput },
+            { label: 'Temp Labour Charges', path: '/service/temp-bill-labour', icon: Hammer },
+        ],
+    },
+    {
+        label: 'QC Entry', icon: ClipboardCheck,
+        children: [
+            { label: 'QC Entry', path: '/quality/qc-entry', icon: ClipboardCheck },
+            { label: 'QC Details', path: '/quality/qc-details', icon: ListChecks },
+            { label: 'GRN QC Details', path: '/quality/grn-qc', icon: PackageCheck },
+        ],
+    },
+    {
+        label: 'Non-Conformance', icon: AlertTriangle,
+        children: [
+            { label: 'NC Details', path: '/quality/nc-details', icon: AlertTriangle },
+        ],
+    },
+    {
+        label: 'Parts & Drawings', icon: Layers,
+        children: [
+            { label: 'PRN File', path: '/quality/prn-file', icon: FileText },
+            { label: 'Fastener List', path: '/quality/fastener-list', icon: Link2 },
+            { label: 'Drawing Upload', path: '/quality/drawing-upload', icon: Upload },
+        ],
+    },
+    {
+        label: 'Drawing Management', icon: PenTool,
+        children: [
+            { label: 'Drawing Master', path: '/drawing/master', icon: FileText },
+            { label: 'Drawing Details', path: '/drawing/details', icon: Layers },
+            { label: 'Revision Details', path: '/drawing/revision', icon: RefreshCw },
+        ],
+    },
+    {
+        label: 'Auto PO Tracking', icon: ShoppingCart,
+        children: [
+            { label: 'Auto PO Details', path: '/automation/auto-po', icon: ShoppingCart },
+            { label: 'Auto PO Track', path: '/automation/auto-po-track', icon: History },
+        ],
+    },
+    {
+        label: 'File Uploads', icon: Upload,
+        children: [
+            { label: 'General File Upload', path: '/automation/file-upload', icon: Upload },
+        ],
+    },
+    {
+        label: 'Error & Audit Logs', icon: AlertTriangle,
+        children: [
+            { label: 'Edit Details', path: '/automation/edit-details', icon: PenLine },
+            { label: 'Error Logs', path: '/automation/error-logs', icon: AlertTriangle },
+            { label: 'Backup', path: '/automation/backup', icon: HardDrive },
+            { label: 'Backup Table', path: '/automation/backup-tbl', icon: HardDrive },
+        ],
+    },
+    {
+        label: 'Temp / Test Tables', icon: FlaskConical,
+        children: [
+            { label: 'Temp', path: '/automation/temp', icon: FileText },
+            { label: 'Test', path: '/automation/test', icon: FlaskConical },
+            { label: 'Test66', path: '/automation/test66', icon: FlaskConical },
+            { label: 'Table 1', path: '/automation/table1', icon: Table },
+        ],
+    },
+    {
         label: 'Masters', icon: Building2,
         children: [
             { label: 'Company', path: '/masters/company', icon: Building2 },
@@ -209,7 +310,40 @@ const menuItems = [
         ],
     },
     {
-        label: 'Finance', icon: Landmark,
+        label: 'Voucher & Journal', icon: BookOpen,
+        children: [
+            { label: 'Voucher Master', path: '/finance/voucher-master', icon: BookOpen },
+            { label: 'Voucher Entry', path: '/finance/voucher-entry', icon: FileText },
+            { label: 'Adjustment', path: '/finance/adjustment', icon: ArrowRightLeft },
+            { label: 'Account Trans', path: '/finance/account-tran', icon: Activity },
+        ],
+    },
+    {
+        label: 'Day Book & Totals', icon: CalendarRange,
+        children: [
+            { label: 'Day Book', path: '/finance/day-book', icon: BookOpen },
+            { label: 'Day Total', path: '/finance/day-total', icon: BarChart3 },
+        ],
+    },
+    {
+        label: 'Payment', icon: Banknote,
+        children: [
+            { label: 'Payment Master', path: '/finance/payment-master', icon: Banknote },
+            { label: 'Auto Pmt Adjustment', path: '/finance/auto-voucher-payment-adj', icon: RefreshCw },
+            { label: 'Auto Pmt Cash', path: '/finance/auto-voucher-payment-cash', icon: Banknote },
+        ],
+    },
+    {
+        label: 'Receipt', icon: Receipt,
+        children: [
+            { label: 'Receipt Master', path: '/finance/receipt-master', icon: Receipt },
+            { label: 'Receipt Trans', path: '/finance/receipt-trans', icon: ArrowRightLeft },
+            { label: 'Auto Rct Adjustment', path: '/finance/auto-voucher-receipt-adj', icon: RefreshCw },
+            { label: 'Auto Rct Cash', path: '/finance/auto-voucher-receipt-cash', icon: Receipt },
+        ],
+    },
+    {
+        label: 'Finance Masters', icon: Landmark,
         children: [
             { label: 'Accounts', path: '/finance/accounts', icon: BookOpen },
             { label: 'Groups', path: '/finance/groups', icon: BookOpen },

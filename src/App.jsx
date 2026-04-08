@@ -102,6 +102,54 @@ import DCMain from './pages/delivery/DCMain';
 import DCDetails from './pages/delivery/DCDetails';
 import NCDCMain from './pages/delivery/NCDCMain';
 import NCDCDetails from './pages/delivery/NCDCDetails';
+import BookingMaster from './pages/service/BookingMaster';
+import BookingServiceDetails from './pages/service/BookingServiceDetails';
+import BookingServiceSpareList from './pages/service/BookingServiceSpareList';
+import ServiceOrder from './pages/service/ServiceOrder';
+import ServiceOrderDetails from './pages/service/ServiceOrderDetails';
+import ServiceRequest from './pages/service/ServiceRequest';
+import ServiceTran from './pages/service/ServiceTran';
+import PartSpareList from './pages/service/PartSpareList';
+import ServiceBillMaster from './pages/service/ServiceBillMaster';
+import ServiceBillTrans from './pages/service/ServiceBillTrans';
+import ServiceBillLabourChargeDetails from './pages/service/ServiceBillLabourChargeDetails';
+import TempServiceBillMaster from './pages/service/TempServiceBillMaster';
+import TempServiceBillTrans from './pages/service/TempServiceBillTrans';
+import TempServiceBillLabourChargeDetails from './pages/service/TempServiceBillLabourChargeDetails';
+import QCEntry from './pages/quality/QCEntry';
+import QCEntryDetails from './pages/quality/QCEntryDetails';
+import GRNQCDetails from './pages/quality/GRNQCDetails';
+import NCDetails from './pages/quality/NCDetails';
+import PRNFile from './pages/quality/PRNFile';
+import FastenerListLink from './pages/quality/FastenerListLink';
+import PartFileDrawingUploaded from './pages/quality/PartFileDrawingUploaded';
+import DrawingMaster from './pages/drawing/DrawingMaster';
+import DrawingDetails from './pages/drawing/DrawingDetails';
+import DrawingRevisionDetails from './pages/drawing/DrawingRevisionDetails';
+import AutoPoDetails from './pages/automation/AutoPoDetails';
+import AutoPoDetailsTrack from './pages/automation/AutoPoDetailsTrack';
+import GeneralFileUpload from './pages/automation/GeneralFileUpload';
+import CurrentEditDetails from './pages/automation/CurrentEditDetails';
+import ErrorLogs from './pages/automation/ErrorLogs';
+import BackupEntry from './pages/automation/BackupEntry';
+import BackupTbl from './pages/automation/BackupTbl';
+import TempEntry from './pages/automation/TempEntry';
+import TestEntry from './pages/automation/TestEntry';
+import Test66Entry from './pages/automation/Test66Entry';
+import Table1Entry from './pages/automation/Table1Entry';
+import VoucherMast1 from './pages/finance/VoucherMast1';
+import VoucherEntry1 from './pages/finance/VoucherEntry1';
+import Adjustment1 from './pages/finance/Adjustment1';
+import AccountTran1 from './pages/finance/AccountTran1';
+import DayBook1 from './pages/finance/DayBook1';
+import DayTotal1 from './pages/finance/DayTotal1';
+import PaymentMaster1 from './pages/finance/PaymentMaster1';
+import AutoVoucherPaymentAdjustment1 from './pages/finance/AutoVoucherPaymentAdjustment1';
+import AutoVoucherPaymentCash1 from './pages/finance/AutoVoucherPaymentCash1';
+import ReceiptMaster1 from './pages/finance/ReceiptMaster1';
+import ReceiptTrans1 from './pages/finance/ReceiptTrans1';
+import AutoVoucherReceiptAdjustment1 from './pages/finance/AutoVoucherReceiptAdjustment1';
+import AutoVoucherReceiptCash1 from './pages/finance/AutoVoucherReceiptCash1';
 import './command-center/CommandCenter.css';
 import './App.css';
 
@@ -212,6 +260,54 @@ function App() {
               <Route path="/delivery/dc-details" element={<DCDetails />} />
               <Route path="/delivery/nc-dc-main" element={<NCDCMain />} />
               <Route path="/delivery/nc-dc-details" element={<NCDCDetails />} />
+              <Route path="/service/booking-master" element={<BookingMaster />} />
+              <Route path="/service/booking-details" element={<BookingServiceDetails />} />
+              <Route path="/service/booking-spares" element={<BookingServiceSpareList />} />
+              <Route path="/service/order" element={<ServiceOrder />} />
+              <Route path="/service/order-details" element={<ServiceOrderDetails />} />
+              <Route path="/service/request" element={<ServiceRequest />} />
+              <Route path="/service/transaction" element={<ServiceTran />} />
+              <Route path="/service/part-spares" element={<PartSpareList />} />
+              <Route path="/service/bill-master" element={<ServiceBillMaster />} />
+              <Route path="/service/bill-trans" element={<ServiceBillTrans />} />
+              <Route path="/service/bill-labour" element={<ServiceBillLabourChargeDetails />} />
+              <Route path="/service/temp-bill-master" element={<TempServiceBillMaster />} />
+              <Route path="/service/temp-bill-trans" element={<TempServiceBillTrans />} />
+              <Route path="/service/temp-bill-labour" element={<TempServiceBillLabourChargeDetails />} />
+              <Route path="/quality/qc-entry" element={<QCEntry />} />
+              <Route path="/quality/qc-details" element={<QCEntryDetails />} />
+              <Route path="/quality/grn-qc" element={<GRNQCDetails />} />
+              <Route path="/quality/nc-details" element={<NCDetails />} />
+              <Route path="/quality/prn-file" element={<PRNFile />} />
+              <Route path="/quality/fastener-list" element={<FastenerListLink />} />
+              <Route path="/quality/drawing-upload" element={<PartFileDrawingUploaded />} />
+              <Route path="/drawing/master" element={<DrawingMaster />} />
+              <Route path="/drawing/details" element={<DrawingDetails />} />
+              <Route path="/drawing/revision" element={<DrawingRevisionDetails />} />
+              <Route path="/automation/auto-po" element={<AutoPoDetails />} />
+              <Route path="/automation/auto-po-track" element={<AutoPoDetailsTrack />} />
+              <Route path="/automation/file-upload" element={<GeneralFileUpload />} />
+              <Route path="/automation/edit-details" element={<CurrentEditDetails />} />
+              <Route path="/automation/error-logs" element={<ErrorLogs />} />
+              <Route path="/automation/backup" element={<BackupEntry />} />
+              <Route path="/automation/backup-tbl" element={<BackupTbl />} />
+              <Route path="/automation/temp" element={<TempEntry />} />
+              <Route path="/automation/test" element={<TestEntry />} />
+              <Route path="/automation/test66" element={<Test66Entry />} />
+              <Route path="/automation/table1" element={<Table1Entry />} />
+              <Route path="/finance/voucher-master" element={<VoucherMast1 />} />
+              <Route path="/finance/voucher-entry" element={<VoucherEntry1 />} />
+              <Route path="/finance/adjustment" element={<Adjustment1 />} />
+              <Route path="/finance/account-tran" element={<AccountTran1 />} />
+              <Route path="/finance/day-book" element={<DayBook1 />} />
+              <Route path="/finance/day-total" element={<DayTotal1 />} />
+              <Route path="/finance/payment-master" element={<PaymentMaster1 />} />
+              <Route path="/finance/auto-voucher-payment-adj" element={<AutoVoucherPaymentAdjustment1 />} />
+              <Route path="/finance/auto-voucher-payment-cash" element={<AutoVoucherPaymentCash1 />} />
+              <Route path="/finance/receipt-master" element={<ReceiptMaster1 />} />
+              <Route path="/finance/receipt-trans" element={<ReceiptTrans1 />} />
+              <Route path="/finance/auto-voucher-receipt-adj" element={<AutoVoucherReceiptAdjustment1 />} />
+              <Route path="/finance/auto-voucher-receipt-cash" element={<AutoVoucherReceiptCash1 />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
