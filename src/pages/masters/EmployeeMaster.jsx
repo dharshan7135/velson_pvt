@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAppContext } from '../../store/AppContext';
 import PageHeader from '../../components/PageHeader';
 import DataTable from '../../components/DataTable';
 import FormModal from '../../components/FormModal';
 import FormField from '../../components/FormField';
 import DropdownWithCreate from '../../components/DropdownWithCreate';
-import { Users } from 'lucide-react';
+import { Users, UserCheck, UserX } from 'lucide-react';
 
 const columns = [
     { key: 'employeeCode', label: 'Code' },
@@ -36,6 +36,17 @@ const EmployeeMaster = () => {
     const designOptions = state.references.filter(r => r.referenceType === 'Designation').map(r => ({ label: r.description, value: r.description }));
     const companyOptions = state.companies.map(c => ({ label: c.fullName, value: c.companyCode }));
     const contractPersonOptions = state.contractors.map(c => ({ label: c.contractorName, value: c.contractorName }));
+
+    // Employee count calculations
+    const totalEmployees = state.employees.length;
+    const relievedEmployees = useMemo(() => state.employees.filter(emp => emp.relievingDate && emp.relievingDate.trim() !== '').length, [state.employees]);
+    const activeEmployees = totalEmployees - relievedEmployees;
+
+    const statCards = [
+        { label: 'Total Employees', count: totalEmployees, icon: Users, bg: 'bg-blue-50', border: 'border-blue-200', iconBg: 'bg-blue-100', iconColor: 'text-blue-600', countColor: 'text-blue-700' },
+        { label: 'Active Employees', count: activeEmployees, icon: UserCheck, bg: 'bg-emerald-50', border: 'border-emerald-200', iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600', countColor: 'text-emerald-700' },
+        { label: 'Relieved Employees', count: relievedEmployees, icon: UserX, bg: 'bg-amber-50', border: 'border-amber-200', iconBg: 'bg-amber-100', iconColor: 'text-amber-600', countColor: 'text-amber-700' },
+    ];
 
     const openAdd = () => { setForm(emptyForm); setEditId(null); setErrors({}); setModal(true); };
     const openEdit = (row) => { setForm({ ...row }); setEditId(row.id); setErrors({}); setModal(true); };
@@ -176,7 +187,22 @@ const EmployeeMaster = () => {
 
     return (
         <div className="p-6">
-            <PageHeader title="Employee Master" description="Manage employee records and department assignments" icon={Users} />
+            <PageHeader title="Employee Master" description="Manage employee records and department assignments" icon={Users}>
+                {statCards.map((card) => {
+                    const CardIcon = card.icon;
+                    return (
+                        <div key={card.label} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border ${card.bg} ${card.border} min-w-[170px]`}>
+                            <div className={`p-2 rounded-lg ${card.iconBg}`}>
+                                <CardIcon className={`w-5 h-5 ${card.iconColor}`} />
+                            </div>
+                            <div>
+                                <p className="text-[11px] font-medium text-slate-500 leading-tight">{card.label}</p>
+                                <p className={`text-lg font-bold leading-tight ${card.countColor}`}>{card.count}</p>
+                            </div>
+                        </div>
+                    );
+                })}
+            </PageHeader>
             <DataTable columns={columns} data={state.employees} onAdd={openAdd} addLabel="Add Employee" onEdit={openEdit} onDelete={(r) => deleteRecord('employees', r.id)} />
 
             <FormModal isOpen={modal} onClose={close} title={editId ? 'Edit Employee' : 'Add Employee'} size="lg">

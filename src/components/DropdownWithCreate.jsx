@@ -225,13 +225,15 @@ const DropdownWithCreate = ({
                                     placeholder="Search..."
                                 />
                             </div>
-                            <button
-                                onClick={(e) => { e.stopPropagation(); setIsAdding(true); setEditIndex(-1); setEditValue(''); setInlineError(''); }}
-                                className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg transition-colors cursor-pointer"
-                                title="Add Inline Option"
-                            >
-                                <Plus className="w-4 h-4" />
-                            </button>
+                            {!onAdd && (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setIsAdding(true); setEditIndex(-1); setEditValue(''); setInlineError(''); }}
+                                    className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg transition-colors cursor-pointer"
+                                    title="Add Inline Option"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                </button>
+                            )}
                         </div>
 
                         {/* Options */}
