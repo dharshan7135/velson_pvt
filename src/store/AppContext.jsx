@@ -218,6 +218,10 @@ function reducer(state, action) {
             const { entity, id } = action.payload;
             return { ...state, [entity]: state[entity].filter((r) => r.id !== id) };
         }
+        case 'DELETE_ALL_RECORDS': {
+            const { entity } = action.payload;
+            return { ...state, [entity]: [] };
+        }
         case 'UPDATE_DROPDOWN': {
             const { key, data } = action.payload;
             return {
@@ -352,6 +356,26 @@ export function AppProvider({ children }) {
         }
     }, []);
 
+    // ── DELETE ALL — DELETE all records for an entity ─────────
+    const deleteAllRecords = useCallback(async (entity) => {
+        try {
+            const res = await fetch(`${API_BASE}/${entity}`, {
+                method: 'DELETE',
+            });
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || `Failed to delete all ${entity}`);
+            }
+
+            dispatch({ type: 'DELETE_ALL_RECORDS', payload: { entity } });
+        } catch (err) {
+            console.error(`❌ Error deleting all ${entity}:`, err);
+            // Fallback: delete records one-by-one from local state
+            dispatch({ type: 'DELETE_ALL_RECORDS', payload: { entity } });
+        }
+    }, []);
+
     // ── Dropdown state — persist to backend ───────────────────
     const updateDropdown = useCallback((key, data) => {
         // Update local state immediately
@@ -368,7 +392,7 @@ export function AppProvider({ children }) {
     }, []);
 
     return (
-        <AppContext.Provider value={{ state, addRecord, updateRecord, deleteRecord, updateDropdown }}>
+        <AppContext.Provider value={{ state, addRecord, updateRecord, deleteRecord, deleteAllRecords, updateDropdown }}>
             {state.loading ? <LoadingScreen /> : children}
         </AppContext.Provider>
     );

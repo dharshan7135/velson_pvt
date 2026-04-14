@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, Edit2, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { exportToExcel } from '../utils/exportToExcel';
 
-const DataTable = ({ columns, data, onEdit, onDelete, onAdd, addLabel = 'Add New', pageSize = 8 }) => {
+const DataTable = ({ columns, data, onEdit, onDelete, onAdd, addLabel = 'Add New', pageSize = 8, exportFileName = 'Export' }) => {
     const [search, setSearch] = useState('');
     const [page, setPage] = useState(0);
 
@@ -19,6 +20,10 @@ const DataTable = ({ columns, data, onEdit, onDelete, onAdd, addLabel = 'Add New
     const totalPages = Math.ceil(filtered.length / pageSize);
     const paged = filtered.slice(page * pageSize, (page + 1) * pageSize);
 
+    const handleExport = () => {
+        exportToExcel(filtered, columns, exportFileName);
+    };
+
     return (
         <div className="space-y-4">
             {/* Toolbar */}
@@ -33,15 +38,25 @@ const DataTable = ({ columns, data, onEdit, onDelete, onAdd, addLabel = 'Add New
                         className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-[#0097A7] focus:ring-4 focus:ring-[#0097A7]/10 transition-all"
                     />
                 </div>
-                {onAdd && (
+                <div className="flex items-center gap-2">
                     <button
-                        onClick={onAdd}
-                        className="px-4 py-2.5 bg-gradient-to-r from-[#0097A7] to-[#00838F] text-white rounded-xl font-semibold text-sm flex items-center gap-2 hover:shadow-lg hover:shadow-[#0097A7]/20 hover:-translate-y-0.5 transition-all cursor-pointer"
+                        onClick={handleExport}
+                        className="px-4 py-2.5 bg-gradient-to-r from-[#1B5E20] to-[#0D3B13] text-white rounded-xl font-semibold text-sm flex items-center gap-2 shadow-[0_0_12px_rgba(27,94,32,0.45)] hover:shadow-[0_0_22px_rgba(27,94,32,0.7)] hover:-translate-y-0.5 transition-all cursor-pointer"
+                        title="Export to Excel"
                     >
-                        <Plus className="w-4 h-4" />
-                        {addLabel}
+                        <Download className="w-4 h-4" />
+                        Export Excel
                     </button>
-                )}
+                    {onAdd && (
+                        <button
+                            onClick={onAdd}
+                            className="px-4 py-2.5 bg-gradient-to-r from-[#0097A7] to-[#00838F] text-white rounded-xl font-semibold text-sm flex items-center gap-2 hover:shadow-lg hover:shadow-[#0097A7]/20 hover:-translate-y-0.5 transition-all cursor-pointer"
+                        >
+                            <Plus className="w-4 h-4" />
+                            {addLabel}
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Table */}

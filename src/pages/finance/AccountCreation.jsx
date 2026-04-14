@@ -217,62 +217,62 @@ const AccountCreation = () => {
 
             <FormModal isOpen={modal} onClose={close} title={editId ? 'Edit Account' : 'Add Account'} size="xl">
                 <div className="p-6 space-y-6">
-                    <FormContainer title="Basic Information">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-                            <FormField label="A/C Code" id="acCode" value={form.acCode} onChange={(e) => set('acCode', e.target.value)} error={errors.acCode} />
-                            <FormField label="L ID" id="lId" value={form.lId} onChange={(e) => set('lId', e.target.value)} />
-                            <FormField label="A/C Name" id="acName" required value={form.acName} onChange={(e) => set('acName', e.target.value)} error={errors.acName} />
-                            <FormField label="Address" id="address" value={form.address} onChange={(e) => set('address', e.target.value)} error={errors.address} />
-                            <FormField label="Due Days" id="dueDays" required type="number" value={form.dueDays} onChange={(e) => set('dueDays', e.target.value)} error={errors.dueDays} />
-                            <FormField label="TDS %" id="tdsPercent" type="number" value={form.tdsPercent} onChange={(e) => set('tdsPercent', e.target.value)} error={errors.tdsPercent} />
-                            <FormField label="Short Name" id="shortName" value={form.shortName} onChange={(e) => set('shortName', e.target.value)} />
-                            <FormField label="Credit Limit" id="creditLimit" required type="number" value={form.creditLimit} onChange={(e) => set('creditLimit', e.target.value)} error={errors.creditLimit} />
-                            <FormField label="TCS %" id="tcsPercent" type="number" value={form.tcsPercent} onChange={(e) => set('tcsPercent', e.target.value)} error={errors.tcsPercent} />
-                            <DropdownWithCreate label="Ledger Type" id="ledgerType" required options={ledgerTypes} value={form.ledgerType} onChange={(v) => set('ledgerType', v)} error={errors.ledgerType} />
-                            <FormField label="Hire Charges" id="hireCharges" required type="number" value={form.hireCharges} onChange={(e) => set('hireCharges', e.target.value)} error={errors.hireCharges} />
-                            <FormField label="KM" id="km" type="number" value={form.km} onChange={(e) => set('km', e.target.value)} error={errors.km} />
-                            <DropdownWithCreate label="Group" id="group" required options={groupOptions} value={form.group} onChange={(v) => set('group', v)} onAdd={() => setAddGroupModal(true)} error={errors.group} />
-                            <FormField label="Account Name" id="accountName" value={form.accountName} onChange={(e) => set('accountName', e.target.value)} />
-                            <FormField label="Opening Balance" id="openingBalance" type="number" value={form.openingBalance} onChange={(e) => set('openingBalance', e.target.value)} error={errors.openingBalance} />
-                            <DropdownWithCreate label="A/C Type" id="acType" options={acTypeOptions} value={form.acType} onChange={(v) => set('acType', v)} />
-                            <FormField label="Area" id="area" value={form.area} onChange={(e) => set('area', e.target.value)} error={errors.area} />
-                        </div>
-                    </FormContainer>
-
-                    <FormContainer title="Banking Details">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-                            <FormField label="Bank A/C No" id="bankAcNo" value={form.bankAcNo} onChange={(e) => set('bankAcNo', e.target.value)} error={errors.bankAcNo} />
-                            <FormField label="IFSC Code" id="ifscCode" value={form.ifscCode} onChange={(e) => set('ifscCode', e.target.value.toUpperCase())} error={errors.ifscCode} />
-                            <FormField label="Branch" id="branch" value={form.branch} onChange={(e) => set('branch', e.target.value)} />
-                            <FormField label="Bank" id="bank" value={form.bank} onChange={(e) => set('bank', e.target.value)} />
-                        </div>
-                    </FormContainer>
-
-                    <FormContainer title="Tax & Identity">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-                            <DropdownWithCreate label="Tax Type" id="taxType" required options={taxTypes} value={form.taxType} onChange={(v) => set('taxType', v)} error={errors.taxType} />
-                            <div className="form-field-group">
-                                <label className="form-label">State Name</label>
-                                <select className="form-input" value={form.stateName} onChange={(e) => set('stateName', e.target.value)}>
-                                    <option value="">Select State</option>
-                                    {stateList.map((s) => <option key={s} value={s}>{s}</option>)}
-                                </select>
+                    <FormContainer title="Account Creation">
+                        <div className="flex flex-col lg:flex-row gap-6">
+                            {/* Column 1 - Left */}
+                            <div className="flex-1 space-y-4">
+                                <FormField label="A/C Code" id="acCode" value={form.acCode} onChange={(e) => set('acCode', e.target.value)} error={errors.acCode} />
+                                <FormField label="A/C Name" id="acName" required value={form.acName} onChange={(e) => set('acName', e.target.value)} error={errors.acName} />
+                                <FormField label="Short Name" id="shortName" value={form.shortName} onChange={(e) => set('shortName', e.target.value)} />
+                                <DropdownWithCreate label="Ledger Type" id="ledgerType" required options={ledgerTypes} value={form.ledgerType} onChange={(v) => set('ledgerType', v)} error={errors.ledgerType} />
+                                <DropdownWithCreate label="Group" id="group" required options={groupOptions} value={form.group} onChange={(v) => set('group', v)} onAdd={() => setAddGroupModal(true)} error={errors.group} />
+                                <FormField label="Opening Balance" id="openingBalance" type="number" value={form.openingBalance} onChange={(e) => set('openingBalance', e.target.value)} error={errors.openingBalance} />
+                                <DropdownWithCreate label="A/C Type" id="acType" options={acTypeOptions} value={form.acType} onChange={(v) => set('acType', v)} />
+                                <DropdownWithCreate label="Tax Type" id="taxType" required options={taxTypes} value={form.taxType} onChange={(v) => set('taxType', v)} error={errors.taxType} />
+                                <FormField label="GST No" id="gstNo" value={form.gstNo} onChange={(e) => set('gstNo', e.target.value.toUpperCase())} error={errors.gstNo} />
+                                <FormField label="PAN No" id="panNo" value={form.panNo} onChange={(e) => set('panNo', e.target.value.toUpperCase())} error={errors.panNo} />
+                                <FormField label="Aadhaar No" id="aadhaarNo" value={form.aadhaarNo} onChange={(e) => set('aadhaarNo', e.target.value)} error={errors.aadhaarNo} />
+                                <FormField label="Contact Person" id="contactPerson" value={form.contactPerson} onChange={(e) => set('contactPerson', e.target.value)} error={errors.contactPerson} />
                             </div>
-                            <FormField label="State Code" id="stateCode" value={form.stateCode} onChange={(e) => set('stateCode', e.target.value)} />
-                            <FormField label="GST No" id="gstNo" value={form.gstNo} onChange={(e) => set('gstNo', e.target.value.toUpperCase())} error={errors.gstNo} />
-                            <FormField label="PAN No" id="panNo" value={form.panNo} onChange={(e) => set('panNo', e.target.value.toUpperCase())} error={errors.panNo} />
-                            <FormField label="Aadhaar No" id="aadhaarNo" value={form.aadhaarNo} onChange={(e) => set('aadhaarNo', e.target.value)} error={errors.aadhaarNo} />
-                        </div>
-                    </FormContainer>
 
-                    <FormContainer title="Contact & Status">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-                            <FormField label="Email ID" id="emailId" type="email" value={form.emailId} onChange={(e) => set('emailId', e.target.value)} error={errors.emailId} />
-                            <FormField label="Phone No" id="phoneNo" value={form.phoneNo} onChange={(e) => set('phoneNo', e.target.value)} error={errors.phoneNo} />
-                            <FormField label="Cell No" id="cellNo" value={form.cellNo} onChange={(e) => set('cellNo', e.target.value)} error={errors.cellNo} />
-                            <FormField label="Contact Person" id="contactPerson" value={form.contactPerson} onChange={(e) => set('contactPerson', e.target.value)} error={errors.contactPerson} />
-                            <DropdownWithCreate label="Status" id="status" required options={statusOptions} value={form.status} onChange={(v) => set('status', v)} error={errors.status} />
-                            <FormField label="Ledger ID" id="ledgerId" value={form.ledgerId} onChange={(e) => set('ledgerId', e.target.value)} />
+                            {/* Column 2 - Middle Left */}
+                            <div className="flex-1 space-y-4">
+                                <FormField label="L ID" id="lId" value={form.lId} onChange={(e) => set('lId', e.target.value)} />
+                                <FormField label="Address" id="address" value={form.address} onChange={(e) => set('address', e.target.value)} error={errors.address} />
+                                <FormField label="Area" id="area" value={form.area} onChange={(e) => set('area', e.target.value)} error={errors.area} />
+                                <div className="form-field-group">
+                                    <label className="form-label">State Name</label>
+                                    <select className="form-input" value={form.stateName} onChange={(e) => set('stateName', e.target.value)}>
+                                        <option value="">Select State</option>
+                                        {stateList.map((s) => <option key={s} value={s}>{s}</option>)}
+                                    </select>
+                                </div>
+                                <FormField label="State Code" id="stateCode" value={form.stateCode} onChange={(e) => set('stateCode', e.target.value)} />
+                                <FormField label="Email ID" id="emailId" type="email" value={form.emailId} onChange={(e) => set('emailId', e.target.value)} error={errors.emailId} />
+                                <FormField label="Phone No" id="phoneNo" value={form.phoneNo} onChange={(e) => set('phoneNo', e.target.value)} error={errors.phoneNo} />
+                                <FormField label="Cell No" id="cellNo" value={form.cellNo} onChange={(e) => set('cellNo', e.target.value)} error={errors.cellNo} />
+                            </div>
+
+                            {/* Column 3 - Middle Right */}
+                            <div className="flex-1 space-y-4">
+                                <FormField label="Due Days" id="dueDays" required type="number" value={form.dueDays} onChange={(e) => set('dueDays', e.target.value)} error={errors.dueDays} />
+                                <FormField label="Credit Limit" id="creditLimit" required type="number" value={form.creditLimit} onChange={(e) => set('creditLimit', e.target.value)} error={errors.creditLimit} />
+                                <FormField label="Hire Charges" id="hireCharges" required type="number" value={form.hireCharges} onChange={(e) => set('hireCharges', e.target.value)} error={errors.hireCharges} />
+                                <FormField label="Account Name" id="accountName" value={form.accountName} onChange={(e) => set('accountName', e.target.value)} />
+                                <FormField label="Bank A/C No" id="bankAcNo" value={form.bankAcNo} onChange={(e) => set('bankAcNo', e.target.value)} error={errors.bankAcNo} />
+                                <FormField label="IFSC Code" id="ifscCode" value={form.ifscCode} onChange={(e) => set('ifscCode', e.target.value.toUpperCase())} error={errors.ifscCode} />
+                                <FormField label="Branch" id="branch" value={form.branch} onChange={(e) => set('branch', e.target.value)} />
+                                <FormField label="Bank" id="bank" value={form.bank} onChange={(e) => set('bank', e.target.value)} />
+                                <DropdownWithCreate label="Status" id="status" required options={statusOptions} value={form.status} onChange={(v) => set('status', v)} error={errors.status} />
+                                <FormField label="Ledger ID" id="ledgerId" value={form.ledgerId} onChange={(e) => set('ledgerId', e.target.value)} />
+                            </div>
+
+                            {/* Column 4 - Right (Small Fields) */}
+                            <div className="w-full lg:w-28 space-y-4">
+                                <FormField label="TDS %" id="tdsPercent" type="number" value={form.tdsPercent} onChange={(e) => set('tdsPercent', e.target.value)} error={errors.tdsPercent} />
+                                <FormField label="Disc %" id="tcsPercent" type="number" value={form.tcsPercent} onChange={(e) => set('tcsPercent', e.target.value)} error={errors.tcsPercent} />
+                                <FormField label="KM" id="km" type="number" value={form.km} onChange={(e) => set('km', e.target.value)} error={errors.km} />
+                            </div>
                         </div>
                     </FormContainer>
 

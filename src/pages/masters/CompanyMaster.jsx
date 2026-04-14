@@ -5,7 +5,7 @@ import DataTable from '../../components/DataTable';
 import FormModal from '../../components/FormModal';
 import FormField from '../../components/FormField';
 import FormContainer from '../../components/FormContainer';
-import { Building2 } from 'lucide-react';
+import { Building2, Upload, X, MapPin, Image } from 'lucide-react';
 import { stateList } from '../../store/mockData';
 
 const columns = [
@@ -19,12 +19,14 @@ const columns = [
 
 const emptyForm = {
     companyCode: '', fullName: '', address: '', state: '', code: '',
-    phoneOff: '', phoneRes: '', subHead: '', subjectTo: '',
+    phoneOff: '', phoneRes: '', subHead: '', subjectTo: '', emailId: '',
+    address1: '', address2: '', address3: '', address4: '',
     bankName: '', accountName: '', accountNo: '', ifscCode: '', branch: '',
-    emailId: '', gstin: '', panNo: '',
+    gstin: '', panNo: '',
     salesPhoneNo: '', salesEmailId: '', salesWebsite: '',
     purchasePhoneNo: '', quotationPhoneNo: '', quotationEmailId: '',
     quotationWebsite: '', purchaseEmailId: '',
+    companyImage: '',
 };
 
 const CompanyMaster = () => {
@@ -33,9 +35,11 @@ const CompanyMaster = () => {
     const [form, setForm] = useState(emptyForm);
     const [editId, setEditId] = useState(null);
     const [errors, setErrors] = useState({});
+    const [imagePreview, setImagePreview] = useState(null);
+    const fileInputRef = React.useRef(null);
 
-    const openAdd = () => { setForm(emptyForm); setEditId(null); setErrors({}); setModal(true); };
-    const openEdit = (row) => { setForm({ ...row }); setEditId(row.id); setErrors({}); setModal(true); };
+    const openAdd = () => { setForm(emptyForm); setEditId(null); setErrors({}); setImagePreview(null); setModal(true); };
+    const openEdit = (row) => { setForm({ ...row }); setEditId(row.id); setErrors({}); setImagePreview(row.companyImage || null); setModal(true); };
     const close = () => setModal(false);
 
     const set = (field, val) => {
@@ -187,8 +191,18 @@ const CompanyMaster = () => {
                             <FormField label="Code" id="code" required value={form.code} onChange={(e) => set('code', e.target.value)} error={errors.code} />
                             <FormField label="Phone (Off)" id="phoneOff" value={form.phoneOff} onChange={(e) => set('phoneOff', e.target.value)} error={errors.phoneOff} />
                             <FormField label="Phone (Res)" id="phoneRes" value={form.phoneRes} onChange={(e) => set('phoneRes', e.target.value)} error={errors.phoneRes} />
+                            <FormField label="Email ID" id="emailId" type="email" value={form.emailId} onChange={(e) => set('emailId', e.target.value)} error={errors.emailId} />
                             <FormField label="Sub Head" id="subHead" value={form.subHead} onChange={(e) => set('subHead', e.target.value)} error={errors.subHead} />
                             <FormField label="Subject To" id="subjectTo" value={form.subjectTo} onChange={(e) => set('subjectTo', e.target.value)} error={errors.subjectTo} />
+                        </div>
+                    </FormContainer>
+
+                    <FormContainer title="Address Details" icon={MapPin}>
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-x-6 gap-y-4">
+                            <FormField label="Address Line 1" id="address1" value={form.address1} onChange={(e) => set('address1', e.target.value)} />
+                            <FormField label="Address Line 2" id="address2" value={form.address2} onChange={(e) => set('address2', e.target.value)} />
+                            <FormField label="Address Line 3" id="address3" value={form.address3} onChange={(e) => set('address3', e.target.value)} />
+                            <FormField label="Address Line 4" id="address4" value={form.address4} onChange={(e) => set('address4', e.target.value)} />
                         </div>
                     </FormContainer>
 
@@ -204,7 +218,6 @@ const CompanyMaster = () => {
 
                     <FormContainer title="Tax & Registration">
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-4">
-                            <FormField label="Email ID" id="emailId" type="email" value={form.emailId} onChange={(e) => set('emailId', e.target.value)} error={errors.emailId} />
                             <FormField label="GSTIN" id="gstin" value={form.gstin} onChange={(e) => set('gstin', e.target.value.toUpperCase())} error={errors.gstin} />
                             <FormField label="PAN No" id="panNo" value={form.panNo} onChange={(e) => set('panNo', e.target.value.toUpperCase())} error={errors.panNo} />
                         </div>
@@ -225,6 +238,64 @@ const CompanyMaster = () => {
                             <FormField label="Quotation Phone No" id="quotationPhoneNo" value={form.quotationPhoneNo} onChange={(e) => set('quotationPhoneNo', e.target.value)} error={errors.quotationPhoneNo} />
                             <FormField label="Quotation Email ID" id="quotationEmailId" type="email" value={form.quotationEmailId} onChange={(e) => set('quotationEmailId', e.target.value)} error={errors.quotationEmailId} />
                             <FormField label="Quotation Website" id="quotationWebsite" value={form.quotationWebsite} onChange={(e) => set('quotationWebsite', e.target.value)} error={errors.quotationWebsite} />
+                        </div>
+                    </FormContainer>
+
+                    <FormContainer title="Company Image" icon={Image}>
+                        <div className="flex items-start gap-6">
+                            {/* Preview */}
+                            <div className="w-40 h-40 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center overflow-hidden flex-shrink-0">
+                                {imagePreview ? (
+                                    <img src={imagePreview} alt="Company" className="w-full h-full object-cover rounded-2xl" />
+                                ) : (
+                                    <>
+                                        <Upload className="w-6 h-6 text-slate-400 mb-1" />
+                                        <span className="text-xs text-slate-400">No image</span>
+                                    </>
+                                )}
+                            </div>
+                            {/* Buttons */}
+                            <div className="flex flex-col gap-3 pt-2">
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                        const file = e.target.files[0];
+                                        if (file) {
+                                            const reader = new FileReader();
+                                            reader.onloadend = () => {
+                                                setImagePreview(reader.result);
+                                                set('companyImage', reader.result);
+                                            };
+                                            reader.readAsDataURL(file);
+                                        }
+                                    }}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="px-5 py-2.5 bg-[#0097A7] text-white rounded-xl font-semibold text-sm flex items-center gap-2 hover:bg-[#00838F] transition-colors cursor-pointer"
+                                >
+                                    <Upload className="w-4 h-4" />
+                                    Browse
+                                </button>
+                                {imagePreview && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setImagePreview(null);
+                                            set('companyImage', '');
+                                            if (fileInputRef.current) fileInputRef.current.value = '';
+                                        }}
+                                        className="px-5 py-2.5 bg-red-50 text-red-600 border border-red-200 rounded-xl font-semibold text-sm flex items-center gap-2 hover:bg-red-100 transition-colors cursor-pointer"
+                                    >
+                                        <X className="w-4 h-4" />
+                                        Clear
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </FormContainer>
 

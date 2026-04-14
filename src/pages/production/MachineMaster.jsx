@@ -6,7 +6,7 @@ import FormModal from '../../components/FormModal';
 import FormField from '../../components/FormField';
 import DropdownWithCreate from '../../components/DropdownWithCreate';
 import { Cog } from 'lucide-react';
-import { countryList } from '../../store/mockData';
+
 
 const columns = [
     { key: 'machineCode', label: 'Code' },
@@ -34,7 +34,7 @@ const MachineMaster = () => {
     const [newCat, setNewCat] = useState('');
 
     const catOptions = state.references.filter(r => r.referenceType === 'Machine Category').map(r => ({ label: r.description, value: r.description }));
-    const currOptions = state.references.filter(r => r.referenceType === 'Currency').map(r => ({ label: r.description, value: r.description }));
+
     const vendorOptions = state.suppliers.map(s => ({ label: s.supplierName, value: s.supplierCode }));
 
     const openAdd = () => { setForm(emptyForm); setEditId(null); setErrors({}); setModal(true); };
@@ -61,8 +61,8 @@ const MachineMaster = () => {
                 else if (!/^[A-Za-z0-9\s]+$/.test(val)) e.machineName = 'Only alphabets, numbers, and spaces allowed';
                 else delete e.machineName;
             }
-            if (['machineCategory', 'country', 'currency'].includes(f)) {
-                if (!v) e[f] = `${f.charAt(0).toUpperCase() + f.slice(1).replace(/([A-Z])/g, ' $1')} is required`;
+            if (f === 'machineCategory') {
+                if (!v) e[f] = 'Machine Category is required';
                 else delete e[f];
             }
             if (f === 'serialNo') {
@@ -129,9 +129,7 @@ const MachineMaster = () => {
             e.manufacture = 'Only alphabets and spaces allowed';
         }
 
-        // Country & Currency (Standard dropdowns - required attribute handled by UI props if needed, here we just ensure selection)
-        if (!form.country) e.country = 'Country is required';
-        if (!form.currency) e.currency = 'Currency is required';
+        // Country & Currency — optional text fields, no validation needed
 
         // 11. Price (Greater than zero)
         if (form.price !== '' && (isNaN(Number(form.price)) || Number(form.price) <= 0)) {
@@ -143,10 +141,7 @@ const MachineMaster = () => {
             e.installationPlace = 'Only alphabets and numbers allowed';
         }
 
-        // 15. Year Of FG (4-digit)
-        if (form.yearOfFG?.trim() && !/^\d{4}$/.test(form.yearOfFG.trim())) {
-            e.yearOfFG = 'Must be a valid 4-digit year';
-        }
+        // 15. Year Of FG — date picker, no special validation needed
 
         // 17. Date Logic Validation
         const dPurchase = form.dateOfPurchase ? new Date(form.dateOfPurchase) : null;
@@ -200,20 +195,13 @@ const MachineMaster = () => {
                         <FormField label="WorkHoursPer Day" id="workHoursPerDay" type="number" value={form.workHoursPerDay} onChange={(e) => set('workHoursPerDay', e.target.value)} error={errors.workHoursPerDay} />
                         <FormField label="Model" id="model" value={form.model} onChange={(e) => set('model', e.target.value)} error={errors.model} />
                         <FormField label="Manufacture" id="manufacture" value={form.manufacture} onChange={(e) => set('manufacture', e.target.value)} error={errors.manufacture} />
-                        <div className="form-field-group">
-                            <label className="form-label">Country <span className="text-red-500 ml-0.5">*</span></label>
-                            <select className={`form-input ${errors.country ? 'border-red-400 focus:border-red-500 focus:ring-red-100' : ''}`} value={form.country} onChange={(e) => set('country', e.target.value)}>
-                                <option value="">Select Country</option>
-                                {countryList.map((c) => <option key={c} value={c}>{c}</option>)}
-                            </select>
-                            {errors.country && <p className="flex items-center gap-1 text-xs text-red-500 mt-1"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-alert-circle w-3 h-3"><circle cx="12" cy="12" r="10" /><line x1="12" x2="12" y1="8" y2="12" /><line x1="12" x2="12.01" y1="16" y2="16" /></svg>{errors.country}</p>}
-                        </div>
-                        <DropdownWithCreate label="Currency" id="currency" required options={currOptions} value={form.currency} onChange={(v) => set('currency', v)} error={errors.currency} />
+                        <FormField label="Country" id="country" value={form.country} onChange={(e) => set('country', e.target.value)} />
+                        <FormField label="Currency" id="currency" value={form.currency} onChange={(e) => set('currency', e.target.value)} />
                         <FormField label="Price" id="price" type="number" value={form.price} onChange={(e) => set('price', e.target.value)} error={errors.price} />
                         <DropdownWithCreate label="Vendor Name" id="vendorName" options={vendorOptions} value={form.vendorName} onChange={(v) => set('vendorName', v)} error={errors.vendorName} />
                         <FormField label="Installation Place" id="installationPlace" value={form.installationPlace} onChange={(e) => set('installationPlace', e.target.value)} error={errors.installationPlace} />
                         <FormField label="Remark" id="remark" value={form.remark} onChange={(e) => set('remark', e.target.value)} />
-                        <FormField label="Year Of FG" id="yearOfFG" value={form.yearOfFG} onChange={(e) => set('yearOfFG', e.target.value)} error={errors.yearOfFG} />
+                        <FormField label="Year Of FG" id="yearOfFG" type="date" value={form.yearOfFG} onChange={(e) => set('yearOfFG', e.target.value)} />
                         <FormField label="Date of Purchase" id="dateOfPurchase" type="date" value={form.dateOfPurchase} onChange={(e) => set('dateOfPurchase', e.target.value)} error={errors.dateOfPurchase} />
                         <FormField label="Date of Installation" id="dateOfInstallation" type="date" value={form.dateOfInstallation} onChange={(e) => set('dateOfInstallation', e.target.value)} error={errors.dateOfInstallation} />
                         <FormField label="Warranty ExpDate" id="warrantyExpDate" type="date" value={form.warrantyExpDate} onChange={(e) => set('warrantyExpDate', e.target.value)} error={errors.warrantyExpDate} />

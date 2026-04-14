@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAppContext } from '../../store/AppContext';
 import PageHeader from '../../components/PageHeader';
 import DataTable from '../../components/DataTable';
@@ -7,7 +7,7 @@ import FormField from '../../components/FormField';
 import FormContainer from '../../components/FormContainer';
 import DropdownWithCreate from '../../components/DropdownWithCreate';
 import Tabs from '../../components/Tabs';
-import { Package, Info, Warehouse, Receipt, Hammer, MoreHorizontal, Upload } from 'lucide-react';
+import { Package, Info, Warehouse, Receipt, Hammer, MoreHorizontal, Upload, X } from 'lucide-react';
 
 const columns = [
     { key: 'partNo', label: 'Part No' },
@@ -45,6 +45,9 @@ const ItemMaster = () => {
     const [editId, setEditId] = useState(null);
     const [errors, setErrors] = useState({});
     const [activeTab, setActiveTab] = useState('basic');
+    const [imagePreview, setImagePreview] = useState(null);
+    const [showImageFull, setShowImageFull] = useState(false);
+    const fileInputRef = useRef(null);
 
     // Inline add modals
     const [addItemGroupModal, setAddItemGroupModal] = useState(false);
@@ -60,8 +63,8 @@ const ItemMaster = () => {
     const materialGradeOptions = Array.from(new Set(state.items.map(i => i.materialGrade).filter(Boolean))).map(v => ({ label: v, value: v }));
     const materialTypeOptions = Array.from(new Set(state.items.map(i => i.materialType).filter(Boolean))).map(v => ({ label: v, value: v }));
 
-    const openAdd = () => { setForm(emptyForm); setEditId(null); setErrors({}); setActiveTab('basic'); setModal(true); };
-    const openEdit = (row) => { setForm({ ...row }); setEditId(row.id); setErrors({}); setActiveTab('basic'); setModal(true); };
+    const openAdd = () => { setForm(emptyForm); setEditId(null); setErrors({}); setActiveTab('basic'); setImagePreview(null); setModal(true); };
+    const openEdit = (row) => { setForm({ ...row }); setEditId(row.id); setErrors({}); setActiveTab('basic'); setImagePreview(row.imageUpload || null); setModal(true); };
     const close = () => setModal(false);
     const set = (f, v) => {
         setForm((p) => ({ ...p, [f]: v }));
@@ -142,12 +145,7 @@ const ItemMaster = () => {
             <FormField label="Size" id="size" value={form.size} onChange={(e) => set('size', e.target.value)} />
             <FormField label="Weight" id="weight" type="number" value={form.weight} onChange={(e) => set('weight', e.target.value)} />
             <DropdownWithCreate label="UOM" id="uom" required options={uomOptions} value={form.uom} onChange={(v) => set('uom', v)} error={errors.uom} />
-            <FormField label="HSN Code" id="hsnCode" value={form.hsnCode} onChange={(e) => set('hsnCode', e.target.value)} />
-            <FormField label="Purchase Rate" id="purchaseRate" type="number" value={form.purchaseRate} onChange={(e) => set('purchaseRate', e.target.value)} error={errors.purchaseRate} />
             <FormField label="Margin %" id="marginPercent" type="number" value={form.marginPercent} onChange={(e) => set('marginPercent', e.target.value)} error={errors.marginPercent} />
-            <FormField label="Rate" id="rate" required type="number" value={form.rate} onChange={(e) => set('rate', e.target.value)} error={errors.rate} />
-            <DropdownWithCreate label="Currency" id="currency" options={currOptions} value={form.currency} onChange={(v) => set('currency', v)} />
-            <DropdownWithCreate label="GST Per" id="gstPer" required options={gstOptions} value={form.gstPer} onChange={(v) => set('gstPer', v)} error={errors.gstPer} />
             <FormField label="Category" id="category" value={form.category} onChange={(e) => set('category', e.target.value)} />
         </div>
     );
@@ -195,9 +193,65 @@ const ItemMaster = () => {
         <div className="space-y-4">
             <div className="form-field-group">
                 <label className="form-label">Image Upload</label>
-                <div className="w-full max-w-[200px] aspect-square bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 hover:border-[#0097A7] transition-colors cursor-pointer">
-                    <Upload className="w-6 h-6 text-slate-400" />
-                    <span className="text-xs text-slate-500">Click to upload</span>
+                <div className="flex items-start gap-4">
+                    {/* Thumbnail / Placeholder */}
+                    <div
+                        onClick={() => imagePreview && setShowImageFull(true)}
+                        className={`w-24 h-24 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center overflow-hidden flex-shrink-0 transition-colors ${
+                            imagePreview ? 'cursor-pointer hover:border-[#0097A7] hover:shadow-md' : ''
+                        }`}
+                    >
+                        {imagePreview ? (
+                            <img src={imagePreview} alt="Item" className="w-full h-full object-cover rounded-xl" />
+                        ) : (
+                            <>
+                                <Upload className="w-5 h-5 text-slate-400 mb-0.5" />
+                                <span className="text-[10px] text-slate-400">No image</span>
+                            </>
+                        )}
+                    </div>
+                    {/* Buttons */}
+                    <div className="flex flex-col gap-2 pt-1">
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                                const file = e.target.files[0];
+                                if (file) {
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => {
+                                        setImagePreview(reader.result);
+                                        set('imageUpload', reader.result);
+                                    };
+                                    reader.readAsDataURL(file);
+                                }
+                            }}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="px-4 py-2 bg-[#0097A7] text-white rounded-lg font-semibold text-xs flex items-center gap-1.5 hover:bg-[#00838F] transition-colors cursor-pointer"
+                        >
+                            <Upload className="w-3.5 h-3.5" />
+                            Browse
+                        </button>
+                        {imagePreview && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setImagePreview(null);
+                                    set('imageUpload', '');
+                                    if (fileInputRef.current) fileInputRef.current.value = '';
+                                }}
+                                className="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg font-semibold text-xs flex items-center gap-1.5 hover:bg-red-100 transition-colors cursor-pointer"
+                            >
+                                <X className="w-3.5 h-3.5" />
+                                Clear
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
@@ -239,6 +293,25 @@ const ItemMaster = () => {
                     </div>
                 </div>
             </FormModal>
+
+            {/* Fullscreen Image Lightbox */}
+            {showImageFull && imagePreview && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" onClick={() => setShowImageFull(false)}>
+                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+                    <button
+                        onClick={() => setShowImageFull(false)}
+                        className="absolute top-5 right-5 z-10 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors cursor-pointer"
+                    >
+                        <X className="w-6 h-6 text-white" />
+                    </button>
+                    <img
+                        src={imagePreview}
+                        alt="Item Full View"
+                        className="relative max-w-[90vw] max-h-[90vh] object-contain rounded-2xl shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </div>
+            )}
         </div>
     );
 };

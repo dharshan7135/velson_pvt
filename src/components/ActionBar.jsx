@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IoSearch, IoSave, IoCreate, IoTrash, IoRefresh, IoClose } from 'react-icons/io5';
+import { IoSearch, IoSave, IoCreate, IoTrash, IoRefresh, IoClose, IoDownload } from 'react-icons/io5';
 
 const ActionBar = ({
     onSearch,
@@ -8,11 +8,13 @@ const ActionBar = ({
     onEdit,
     onDelete,
     onClear,
+    onExport,
     showRefresh = false,
     showSave = true,
     showEdit = true,
     showDelete = false,
     showClear = false,
+    showExport = false,
     children,
 }) => {
     const [searchText, setSearchText] = useState('');
@@ -51,6 +53,12 @@ const ActionBar = ({
 
             {/* Actions */}
             <div className="flex items-center gap-2">
+                {showExport && (
+                    <button onClick={onExport} className={`${btnBase} bg-gradient-to-r from-[#1B5E20] to-[#0D3B13] text-white shadow-[0_0_12px_rgba(27,94,32,0.45)] hover:shadow-[0_0_22px_rgba(27,94,32,0.7)]`}>
+                        <IoDownload className="w-3.5 h-3.5" />
+                        Export Excel
+                    </button>
+                )}
                 {showRefresh && (
                     <button onClick={onRefresh} className={`${btnBase} border border-[#0097A7] text-[#0097A7] bg-[#0097A7]/5 hover:bg-[#0097A7]/10`}>
                         <IoRefresh className="w-3.5 h-3.5" />
@@ -87,3 +95,4 @@ const ActionBar = ({
 };
 
 export default ActionBar;
+
