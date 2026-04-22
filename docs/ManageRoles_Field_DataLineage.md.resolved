@@ -1,0 +1,1045 @@
+# ManageRoles ERP — Field Data Lineage & Cross-Page Relationships
+
+> **Purpose**: For every input field on every page, this document traces **where the data comes from**, **how it is obtained** (typed, dropdown, AJAX, auto-generated, system-captured), and **which other page manages/creates that data**.
+
+---
+
+## How to Read This Document
+
+Each field entry follows this format:
+
+| Column | Meaning |
+|---|---|
+| **Field** | The input field name on the form |
+| **Input Method** | How the user provides data: `Manual`, `Dropdown`, `AJAX Auto-fill`, `Auto-generated`, `System-captured`, `Calculated`, `File Upload` |
+| **Data Source** | The SQL table/view the data comes from |
+| **Managed On Page** | Which page in the system creates/manages the dropdown values |
+| **Relationship** | How this field connects to other entities |
+
+---
+
+## Master Data Flow Diagram
+
+> [!IMPORTANT]
+> Most dropdown values flow through the **Reference Group System**. An admin creates a Reference Group (category) → then creates Reference Group Values (options) → SQL views (`qry*Master`) expose these as dropdown sources for other pages.
+
+```mermaid
+flowchart LR
+    RGM["Reference Group Master Page\n(Creates categories)"] --> RGV["Reference Group Value Page\n(Creates dropdown options)"]
+    RGV --> QRY["SQL Views\n(qry*Master)"]
+    QRY --> DD["Dropdown Lists\non Master Pages"]
+    
+    QRY --> DEP["qryDepartmentMaster"]
+    QRY --> DES["qryDesignationMaster"]
+    QRY --> PRT["qryProcessTypeMaster"]
+    QRY --> TMM["qryTeamMaster"]
+    QRY --> MCM["qryMachineCategroyMaster"]
+    QRY --> VDM["qryVendorMasterForDropDown"]
+    QRY --> CTM["qryCompanyTypeMaster"]
+    QRY --> CUM["qryCustomerTypeMaster"]
+    QRY --> SUM["qrySupplierTypeMaster"]
+    QRY --> CNM["qryContractMasterForDropdown"]
+    QRY --> COM["qryCompanyMasterForDropdown"]
+    
+    DEP --> EMP["Employee Master"]
+    DES --> EMP
+    CNM --> EMP
+    COM --> EMP
+    CTM --> CMP["Company Master"]
+    CUM --> CUS["Customer Master"]
+    SUM --> SUP["Supplier Master"]
+    MCM --> MAC["Machine Master"]
+    VDM --> MAC
+    PRT --> PRC["Process Master"]
+    TMM --> PRC
+```
+
+---
+
+## 1. Login Page — Field Data Lineage
+
+| Field | Input Method | Data Source | Managed On Page | Relationship |
+|---|---|---|---|---|
+| `Username` | **Manual** — User types | — | — | Matched against `Usermasters` table |
+| `Password` | **Manual** — User types | — | — | Decrypted from `PasswordMaster` table via AES |
+| `CAPTCHA` | **Manual** — User types | — | — | Server-generated via `CaptchaMvc` library |
+
+**Data flow**: `Username` → looks up `Usermasters` table → matches `UserId` → fetches `PasswordMaster.Password` → decrypts via AES → compares → fetches `SavedAssignedRoles` (created on **Assign Role to User** page) → determines dashboard redirect.
+
+---
+
+## 2. Registration Page — Field Data Lineage
+
+| Field | Input Method | Data Source | Managed On Page | Relationship |
+|---|---|---|---|---|
+| `UserName` | **Manual** + **AJAX duplicate check** | Checked against `Usermasters` table | **Create Users** page or self-register | AJAX: `GET /Registration/CheckUsername` |
+| `FirstName` | **Manual** | — | — | Saved to `Usermasters.FirstName` |
+| `LastName` | **Manual** | — | — | Saved to `Usermasters.LastName` |
+| `EmailId` | **Manual** | — | — | Saved to `Usermasters.EmailId` |
+| `MobileNo` | **Manual** | — | — | Saved to `Usermasters.MobileNo` |
+| `Gender` | **Manual** | — | — | Saved to `Usermasters.Gender` |
+| `Password` | **Manual** → **AES encrypted** | — | — | Saved to `PasswordMaster.Password` (encrypted) |
+| `ConfirmPassword` | **Manual** | — | — | Client-side match validation only |
+
+---
+
+## 3. Create Users Page — Field Data Lineage
+
+| Field | Input Method | Data Source | Managed On Page | Relationship |
+|---|---|---|---|---|
+| `UserName` | **Manual** + duplicate check | `Usermasters` table | Self (this page) | `IUserMaster.CheckUsernameExists()` |
+| `FirstName` | **Manual** | — | — | → `Usermasters.FirstName` |
+| `LastName` | **Manual** | — | — | → `Usermasters.LastName` |
+| `EmailId` | **Manual** | — | — | → `Usermasters.EmailId` |
+| `MobileNo` | **Manual** | — | — | → `Usermasters.MobileNo` |
+| `Gender` | **Manual** | — | — | → `Usermasters.Gender` |
+| `Password` | **Manual** → AES encrypted | — | — | → `PasswordMaster` |
+| `ConfirmPassword` | **Manual** | — | — | Client-side only |
+| `RoleId` | **Dropdown** | `RoleMasters` table | **🔗 Role Master page** (`/RoleMaster/Create`) | `IRole.GetAllActiveRoles()` → populated on page load |
+
+---
+
+## 4. Company Master Page — Field Data Lineage
+
+| Field | Input Method | Data Source | Managed On Page | Relationship |
+|---|---|---|---|---|
+| `CompanyCode` | **🔄 Auto-generated** | Stored procedure: `Pr_Fetch_Company_Code` | Auto — no user input | Generated on form load via AJAX → readonly field (see §17.1) |
+| `CompanyName` | **Manual** + duplicate check | — | — | AJAX: `CheckCompanyName` before save |
+| `CompanyTypeId` | **Dropdown** | `CompanyTypeMaster` → SQL view: `qryCompanyTypeMaster` | **🔗 Ref Group Value page** (`/ReferenceGroupValue/Create`) — Group: "Company Type" | Values created on Ref Group Value page flow here |
+| `DoorNumber` | **Manual** | — | — | Direct text input |
+| `Street` | **Manual** | — | — | Direct text input |
+| `Place` | **Manual** | — | — | Direct text input |
+| `Post` | **Manual** | — | — | Direct text input |
+| `City` | **Manual** | — | — | Direct text input |
+| `Taluk` | **Manual** | — | — | Direct text input |
+| `District` | **Manual** | — | — | Direct text input |
+| `DistrictCode` | **Manual** | — | — | Numeric district code |
+| `State` | **Manual** | — | — | Direct text input |
+| `StateCode` | **Manual** | — | — | Numeric GST state code |
+| `Country` | **Manual** | — | — | Direct text input |
+| `PinCode` | **Manual** | — | — | Direct text input |
+| `FullAddress` | **Manual** | — | — | Stored as `varbinary(max)` |
+| `GSTIN` | **Manual** | — | — | 15-char GST identifier |
+| `PanNo` | **Manual** | — | — | 10-char PAN |
+| `CPhoneNumber` | **Manual** | — | — | Company dept phone |
+| `CEMailId` | **Manual** | — | — | Company dept email |
+| `CWebsiteURL` | **Manual** | — | — | Company dept website |
+| `MPhoneNumber` | **Manual** | — | — | Marketing dept phone |
+| `MEMailId` | **Manual** | — | — | Marketing dept email |
+| `MWebsiteURL` | **Manual** | — | — | Marketing dept website |
+| `PPhoneNumber` | **Manual** | — | — | Purchase dept phone |
+| `PEMailId` | **Manual** | — | — | Purchase dept email |
+| `PWebsiteURL` | **Manual** | — | — | Purchase dept website |
+| `SPhoneNumber` | **Manual** | — | — | Sales dept phone |
+| `SEMailId` | **Manual** | — | — | Sales dept email |
+| `SWebsiteURL` | **Manual** | — | — | Sales dept website |
+| `SERPhoneNumber` | **Manual** | — | — | Service dept phone |
+| `SEREMailId` | **Manual** | — | — | Service dept email |
+| `SERWebsiteURL` | **Manual** | — | — | Service dept website |
+| `BankAccountType` | **Manual** | — | — | Savings/Current |
+| `BankAccountName` | **Manual** | — | — | Name on account |
+| `BankAccountNumber` | **Manual** | — | — | Account number |
+| `BankName` | **Manual** | — | — | Bank name |
+| `BankIFSCCode` | **Manual** | — | — | IFSC |
+| `BankMICRCode` | **Manual** | — | — | MICR |
+| `BankBranch` | **Manual** | — | — | Branch |
+| `BankDistrict` | **Manual** | — | — | Branch district |
+| `BankState` | **Manual** | — | — | Branch state |
+| `BankPinCode` | **Manual** | — | — | Branch PIN |
+| `BankCountry` | **Manual** | — | — | Branch country |
+| `BankFullAddress` | **Manual** | — | — | Full bank address |
+| `CLogoImagePath` | **File Upload** | — | — | Saved to filesystem |
+| `Status` | **Manual** select | — | — | Active/Inactive |
+| `CreatedBy` | **🔄 System-captured** | `Session["UserID"]` | — | Auto from logged-in user |
+| `CreatedDate` | **🔄 System-captured** | `DateTime.Now` | — | Auto timestamp (see §17.7) |
+
+---
+
+## 5. Employee Master Page — Field Data Lineage
+
+| Field | Input Method | Data Source (SQL View) | Managed On Page | Relationship |
+|---|---|---|---|---|
+| `EM_Code` | **Manual** | — | — | Unique employee code |
+| `EM_Employee_Name` | **Manual** | — | — | Direct text input |
+| `DepartmentId` | **Dropdown** | `DepartmentMaster` → `qryDepartmentMaster` | **🔗 Ref Group Value page** — Group: "Department" | Values from Reference Group system |
+| `DesignationId` | **Dropdown** | `DesignationMaster` → `qryDesignationMaster` | **🔗 Ref Group Value page** — Group: "Designation" | Values from Reference Group system |
+| `ContractId` | **Dropdown** | `ContractPersonMaster` → `qryContractMasterForDropdown` | **🔗 Contractor Master page** (`/ContractorMaster/Create`) | Populated from active contractors |
+| `CompanyId` | **Dropdown** | `CompanyNameMaster` → `qryCompanyMasterForDropdown` | **🔗 Company Master page** (`/CompanyMaster/Create`) | Populated from active companies |
+| `Address` | **Manual** | — | — | Text area |
+| `Contact_No` | **Manual** | — | — | Phone number |
+| `Adhar_No` | **Manual** | — | — | 12-digit Aadhaar |
+| `Join_Date` | **Manual** (default: today) | `DateTime.Today` | — | Date picker |
+| `EM_DOB` | **Manual** | — | — | Date picker |
+| `Releving_Date` | **Manual** | — | — | Text/Date picker |
+| `EM_Team` | **Manual** | — | — | Text input |
+| `EM_Email_ID` | **Manual** | — | — | Email input |
+| `EM_Rep_Person` | **Manual** | — | — | Text input |
+| `EM_Status` | **Manual** select | — | — | Active/Inactive |
+
+---
+
+## 6. Customer Master Page — Field Data Lineage
+
+| Field | Input Method | Data Source | Managed On Page | Relationship |
+|---|---|---|---|---|
+| `CustomerTypeId` | **Dropdown** | `CustomerTypeMaster` → `qryCustomerTypeMaster` | **🔗 Ref Group Value page** — Group: "Customer Type" | Reference Group derived |
+| `LM_Ledger_Name` | **Manual** + **AJAX duplicate** | — | — | AJAX: `CheckCustomerName` |
+| `LM_Code` | **Manual** | — | — | Customer code |
+| `LM_Address1–5` | **Manual** | — | — | 5 address line fields |
+| `LM_Area` | **AJAX Autocomplete** | `LedgerMaster` → existing `LM_Area` values | **🔗 No UI page** — Pre-loaded master data | AJAX: `GET /CustomerMaster/GetCityName?term=` — searches `LedgerMaster.LM_Area` with `DISTINCT` |
+| `LM_State` | **🔄 AJAX Autocomplete** | `StateMaster` → `ZZZZA_StateMaster` | **🔗 No UI page** — Pre-loaded master data | AJAX: `GET /CustomerMaster/GetStateName?term=` — returns `{label: StateName, value: StateCode}` (see §17.5) |
+| `LM_StateCode` | **🔄 Auto-filled** from state | `StateMaster.StateCode` | — | When state selected from autocomplete → the `value` field carries the StateCode → auto-populates (see §17.5) |
+| `LM_Country` | **AJAX Autocomplete** | `LedgerMaster` → existing `LM_Country` values | — | AJAX: `GET /CustomerMaster/GetCountryName?term=` — searches `LedgerMaster.LM_Country` with `DISTINCT` |
+| `LM_PinCode` | **Manual** | — | — | 6-digit postal code |
+| `LM_Contact_Person` | **Manual** | — | — | Text input |
+| `LM_Phone_Number` | **Manual** | — | — | Phone |
+| `LM_Cell_No` | **Manual** | — | — | Mobile |
+| `LM_EmailID` | **Manual** | — | — | Email |
+| `LM_WebSite` | **Manual** | — | — | URL |
+| `LM_GSTIN` | **Manual** | — | — | 15-char GST ID |
+| `LM_PAN_No` | **Manual** | — | — | PAN card |
+| `LM_Aadhar_No` | **Manual** | — | — | Aadhaar number |
+| `LM_Bank_Name` | **AJAX Autocomplete** | `LedgerMaster` → existing `LM_Bank_Name` values | **🔗 No UI page** — Pre-loaded | AJAX: `GET /CustomerMaster/GetBankName?term=` — searches `LedgerMaster.LM_Bank_Name` with `DISTINCT` |
+| `LM_Branch` | **AJAX Autocomplete** | `LedgerMaster` → existing `LM_Branch` values | **🔗 No UI page** — Pre-loaded | AJAX: `GET /CustomerMaster/GetBranchName?term=` — searches `LedgerMaster.LM_Branch` with `DISTINCT` |
+| `LM_Account_Name` | **Manual** | — | — | Account holder |
+| `LM_Account_Number` | **Manual** | — | — | Account number |
+| `LM_IFSC_Code` | **AJAX Autocomplete** | `LedgerMaster` → existing `LM_IFSC_Code` values | **🔗 No UI page** — Pre-loaded | AJAX: `GET /CustomerMaster/GetIFSCCode?term=` |
+| `LM_MICRCODEBANK` | **AJAX Autocomplete** | `LedgerMaster` → existing `LM_MICRCODEBANK` values | **🔗 No UI page** — Pre-loaded | AJAX: `GET /CustomerMaster/GetMICRCode?term=` |
+| `LM_Cus_Remarks` | **Manual** | — | — | Text area |
+| _Audit: IPAddress_ | **🔄 System-captured** | `Request.UserHostAddress` | — | Auto from HTTP request (see §16) |
+| _Audit: MACAddress_ | **🔄 System-captured** | `SystemInfo` table by IP | **🔗 System Info Master** (`/SystemInfoMaster`) | Lookup: `SystemInfo.Where(ip == requestIP)` (see §16) |
+| _Audit: DeviceName_ | **🔄 System-captured** | `SystemInfo` table by IP | **🔗 System Info Master** | Same lookup |
+| _Audit: Username_ | **🔄 System-captured** | `SystemInfo` table by IP | **🔗 System Info Master** | Same lookup |
+
+> [!NOTE]
+> **Supplier Master** follows the exact same pattern, just replacing `CustomerTypeMaster` with `SupplierTypeMaster` (group: "Supplier Type") and `LM_CusCode` with `LM_SupCode`.
+
+---
+
+## 7. Contractor Master Page — Field Data Lineage
+
+| Field | Input Method | Data Source | Managed On Page | Relationship |
+|---|---|---|---|---|
+| `Contract_Code` | **Manual** | — | — | Created here → **used as dropdown** on Employee Master page |
+| `Contract_Name` | **Manual** | — | — | Created here → displayed in `qryContractMasterForDropdown` view |
+| `Address` | **Manual** | — | — | Text area |
+| `Phone` | **Manual** | — | — | Text input |
+| `Email` | **Manual** | — | — | Email input |
+| `Status` | **Manual** | — | — | Active/Inactive |
+
+> [!IMPORTANT]
+> **Cross-page relationship**: Contractors created here appear as the `ContractId` dropdown on **Employee Master** page via `qryContractMasterForDropdown` SQL view.
+
+---
+
+## 8. Machine Master Page — Field Data Lineage
+
+| Field | Input Method | Data Source (SQL View) | Managed On Page | Relationship |
+|---|---|---|---|---|
+| `MachinecategroyId` | **Dropdown** | `MachineCategroyMaster` → `qryMachineCategroyMaster` | **🔗 Ref Group Value page** — Group: "Machine Category" | Reference Group derived |
+| `SM_VendorId` | **Dropdown** | `VendorMaster` → `qryVendorMasterForDropDown` | **🔗 Ref Group Value page** — Group: "Vendor" | Reference Group derived |
+| `Machine_Code` | **Manual** | — | — | Created here → `Machine_id` used on **Process Master** page |
+| `Machine_Name` | **Manual** | — | — | Created here → `Machine_Name` displayed on Process Master |
+| `Machine_Description` | **Manual** | — | — | Text input |
+| `Location` | **Manual** | — | — | Factory location |
+| `Status` | **Manual** | — | — | Active/Inactive |
+
+---
+
+## 9. Process Master Page — Field Data Lineage
+
+| Field | Input Method | Data Source (SQL View) | Managed On Page | Relationship |
+|---|---|---|---|---|
+| `PM_Process_Name` | **Manual** | — | — | Text input |
+| `PM_Process_Name1` | **Manual** | — | — | Alternate name |
+| `ProcessTypeId` | **Dropdown** | `ProcessTypeMaster` → `qryProcessTypeMaster` | **🔗 Ref Group Value page** — Group: "Process Type" | Reference Group derived |
+| `TeamId` | **Dropdown** | `TeamMaster` → `qryTeamMaster` | **🔗 Ref Group Value page** — Group: "Team" | Reference Group derived |
+| `PM_Process_Order` | **Manual** | — | — | Number input |
+| `PM_Days` | **Manual** | — | — | Number input |
+| `PM_Hours` | **Manual** | — | — | Number input |
+| `Minutes` | **Manual** | — | — | Number input |
+| `Setting_Time` | **Manual** (default: 0) | — | — | Number input |
+| `Cycle_Time` | **Manual** (default: 0) | — | — | Number input |
+| `Handling_Time` | **Manual** (default: 0) | — | — | Number input |
+| `Idle_Time` | **Manual** | — | — | Number input |
+| `Machine_id` | **Manual/Lookup** | `MachineMaster` table | **🔗 Machine Master page** (`/MachineMaster/Create`) | Links to machine created on Machine Master |
+| `Machine_Name` | **🔄 Auto-filled** | From `MachineMaster` by `Machine_id` | **🔗 Machine Master page** | Display name of selected machine |
+
+---
+
+## 10. Vehicle Master Page — Field Data Lineage
+
+| Field | Input Method | Data Source | Managed On Page | Relationship |
+|---|---|---|---|---|
+| `Customer_Id` | **Dropdown** | `CustomerMaster` → active customers from `LedgerMaster` | **🔗 Customer Master page** (`/CustomerMaster/Create`) | Triggers AJAX cascade on selection |
+| `Customer_Code` | **🔄 AJAX Auto-filled** | ← from selected customer | **🔗 Customer Master** | `GET /VehicleMaster/GetCustomerDetails?customerId=` (see §17.4) |
+| `LM_Address1–5` | **🔄 AJAX Auto-filled** | ← from selected customer | **🔗 Customer Master** | Same AJAX call auto-fills all 5 address lines (see §17.4) |
+| `LM_Area` | **🔄 AJAX Auto-filled** | ← from selected customer | **🔗 Customer Master** | City from customer record |
+| `LM_State` | **🔄 AJAX Auto-filled** | ← from selected customer | **🔗 Customer Master** | State from customer record |
+| `LM_StateCode` | **🔄 AJAX Auto-filled** | ← from selected customer | **🔗 Customer Master** | GST state code |
+| `LM_Country` | **🔄 AJAX Auto-filled** | ← from selected customer | **🔗 Customer Master** | Country |
+| `Vehicle_Model_No_Id` | **Dropdown** | `VehicleModelNumberMaster` | **🔗 Ref Group Value page** — Group: "Vehicle Model Number" | Reference Group derived |
+| `Model_Sub_Type_Id` | **Dropdown** | `VehicleSubTypeMaster` | **🔗 Ref Group Value page** — Group: "Vehicle Sub Type" | Reference Group derived |
+| `Vehicle_Name_Id` | **Dropdown** | `VehicleNameMaster` | **🔗 Ref Group Value page** — Group: "Vehicle Name" | Reference Group derived |
+| `Serial_No` | **🔄 Auto-generated** via AJAX | SQL query on `VMAAqryVehicleMasterDetailsDisplaySplitSNoNumber` | Auto — no page | `GET /VehicleMaster/GetMaxSno?modelNo=` → MAX+1 filtered by financial year (see §17.3) |
+| `Vehicle_No` | **Manual** | — | — | Registration plate |
+| `Customer_Vehicle_Count` | **🔄 AJAX Auto-filled** | Count from `VehicleMaster` by customer | Auto — no page | `GET /VehicleMaster/GetVehicleCountDetails?customerId=` → `MAX(Customer_Vehicle_Count)` (see §17.4) |
+| `BOM_Type` | **Manual** select | — | — | Static options |
+| `Model_Row_Id` | **Dropdown** | `VehicleIndexModelNumberMaster` | **🔗 Ref Group Value page** — Group: "Vehicle Index Model Number" | BOM model link |
+| `Remarks` | **Manual** | — | — | Text area |
+
+---
+
+## 11. Item Master Page — Field Data Lineage (Most Complex)
+
+| Field | Input Method | Data Source (SQL View) | Managed On Page | Relationship |
+|---|---|---|---|---|
+| `GroupId` | **Dropdown** | `ItemGroupMaster` → `qryItemGroupMaster` | **🔗 Item Group Master page** (`/ItemGroupMaster/Create`) | Each group defines a prefix for part number auto-generation |
+| `IM_Part_No` | **🔄 Auto-generated** | SQL function: `Z_GetMaximumPartNumberPlusOne1NEW1(@itemGroup)` | Auto — no page | Generated server-side on save from group name → next sequential part no. (see §17.2) |
+| `Outsource_Part_No` | **🔄 Auto-generated** or **Manual** | SQL query: `SELECT TOP 1 MAXOSPN FROM qryItemMasterDisplayAllSplitOutSourcePNO2MAXSTATUS` | Auto or manual | Prefix "VOS" + auto-increment from MAX query (see §17.2) |
+| `IM_PartName` | **Manual** | — | — | Text input |
+| `ModelId` | **Dropdown** | `ItemModelMaster` → `qryItemModelMaster` | **🔗 Ref Group Value page** — Group: "Item Model" | Reference Group derived |
+| `Brand` | **Manual** | — | — | Text input |
+| `IM_Description` | **Manual** | — | — | Text area |
+| `IM_Size` | **Manual** | — | — | Text input |
+| `IM_WEIGHT` | **Manual** | — | — | Decimal input |
+| `UnitId` | **Dropdown** | `ItemUnitMaster` → `qryItemUnitMaster` | **🔗 Ref Group Value page** — Group: "UOM" | Reference Group derived (Nos, Kg, Mtr, etc.) |
+| `IM_HSN_Code` | **Manual** | — | — | HSN/SAC code text |
+| `IM_Purchase_Rate` | **Manual** | — | — | Decimal input |
+| `IM_Margin_per` | **Manual** | — | — | Decimal input |
+| `IM_Rate` | **Manual** or **🔄 Calculated** | — | — | Can be calculated: `Purchase_Rate × (1 + Margin/100)` |
+| `CurrencyId` | **Dropdown** | `ItemCurrencyMaster` → `qryItemCurrencyMaster` | **🔗 Ref Group Value page** — Group: "Currency" | Reference Group derived (INR, USD, EUR, etc.) |
+| `TaxId` | **Dropdown** | `ItemTaxGroupMaster` → `qryItemTaxGroupMaster` | **🔗 Tax Master page** (`/TaxMaster/Create`) | Shows tax % from Tax Master records |
+| `SubGroupId` | **Dropdown** | `ItemSubGroupMaster` → `qryItemSubGroupMaster` | **🔗 Ref Group Value page** — Group: "Item Sub Group" | Reference Group derived |
+| `StoreId` | **Dropdown** | `ItemStoreMaster` → `qryItemStoreMaster` | **🔗 Ref Group Value page** — Group: "Store" | Reference Group derived |
+| `Rack_No` | **Manual** | — | — | Text input |
+| `Location` | **Manual** | — | — | Text input |
+| `IM_ReorderLevel` | **Manual** | — | — | Integer → used by **Auto PO** page for reorder alerts |
+| `IM_Min_Stock` | **Manual** | — | — | Integer → used by **Auto PO** page |
+| `ItemTypeId` | **Dropdown** | `ItemTypeMaster` → `qryItemTypeMaster` | **🔗 Ref Group Value page** — Group: "Item Type" | Reference Group derived (Raw Material, Finished Good, etc.) |
+| `QcTypeId` | **Dropdown** | `ItemQcTypeMaster` → `qryItemQcTypeMaster` | **🔗 Ref Group Value page** — Group: "QC Type" | Reference Group derived |
+| `MaterialGradeId` | **Dropdown** | `ItemMaterialGradeMaster` → `qryItemMaterialGradeMaster` | **🔗 Ref Group Value page** — Group: "Material Grade" | Reference Group derived (SS304, EN8, etc.) |
+| `MaterialTypeId` | **Dropdown** | `ItemMaterialTypeMaster` → `qryItemMaterialTypeMaster` | **🔗 Ref Group Value page** — Group: "Material Type" | Reference Group derived |
+| `RawMaterialId` | **Dropdown** | `ItemRawMaterialMaster` → `qryItemRawMaterialMaster` | **🔗 Ref Group Value page** — Group: "Raw Material" | Reference Group derived |
+| `RM_length` | **Manual** | — | — | Text input |
+| `Raw_material_wt` | **Manual** | — | — | Decimal input |
+| `FG_material_wt` | **Manual** | — | — | Decimal input |
+| `ImageFile` | **File Upload** | — | — | Saved to `~/Content/images/` |
+| `PdfFile` | **File Upload** | — | — | Saved to `~/Content/pdfs/` |
+| `RouteCardNumber` | **Manual** | — | — | Text input |
+| `IM_Remarks` | **Manual** | — | — | Text input |
+| `PrefixId` | **Dropdown** | `ItemGroupMasterFormatedPrefix` | **🔗 Part Number Base Master page** | Prefix from part number config |
+
+> [!IMPORTANT]
+> Item Master has **12 dropdowns**, of which **10 come from Reference Group Values** and **2 come from dedicated master pages** (Tax Master and Item Group Master). When a new dropdown option is needed (e.g., a new UOM "Set"), an admin first creates it on the **Reference Group Value** page under the appropriate group.
+
+---
+
+## 12. Quotation Page — Field Data Lineage
+
+| Field | Input Method | Data Source | Managed On Page | Relationship |
+|---|---|---|---|---|
+| `PO_No` | **🔄 Auto-generated** | C# server-side: Financial year prefix + padded sequence | Auto — no page | Format: `YY-YY/QXXXXX` (see §17.6 for exact formula) |
+| `PODate` | **Manual** (default: today) | `DateTime.Today` | — | Date picker |
+| `Customer_ID` | **Dropdown** | `LedgerMaster` (where customer) | **🔗 Customer Master page** | Triggers AJAX cascade |
+| `Contact_Person` | **🔄 AJAX Auto-filled** | ← `LM_Contact_Person` from customer | **🔗 Customer Master** | Filled when customer selected |
+| `Contact_No` | **🔄 AJAX Auto-filled** | ← `LM_Phone_Number` from customer | **🔗 Customer Master** | Filled when customer selected |
+| `LM_Address1–5` | **🔄 AJAX Auto-filled** | ← address from customer | **🔗 Customer Master** | 5 fields filled from customer record |
+| `GSTTIN` | **🔄 AJAX Auto-filled** | ← `LM_GSTIN` from customer | **🔗 Customer Master** | Filled when customer selected |
+| `CustomerRefNo` | **Manual** | — | — | Text input |
+| `Revision_No` | **Manual** / **Auto** | — | — | Increments on edit |
+| `Delivery_Date` | **Manual** | — | — | Date picker |
+| `Validity_Until` | **Manual** | — | — | Text input |
+| `QuotationTypeId` | **Dropdown** | `QuotationTypeMaster` | **🔗 Ref Group Value page** — Group: "Quotation Type" | Reference Group derived |
+| `GradeId` | **Dropdown** | `QuotationGradeMaster` | **🔗 Ref Group Value page** — Group: "Grade/Model" | Reference Group derived |
+| `TaxTypeId` | **Dropdown** | `QuotationTaxTypeMaster` | **🔗 Ref Group Value page** — Group: "Tax Type" | Determines SGST/CGST vs IGST split |
+| `TaxId` | **Dropdown** | Tax percentage list from `Tax_Master` | **🔗 Tax Master page** (`/TaxMaster/Create`) | Shows configured tax slabs |
+| `CurrencyTypeId` | **Dropdown** | `QuotationCurrencyTypeMaster` | **🔗 Ref Group Value page** — Group: "Currency Type" | Reference Group derived |
+| `Exchange_Rate` | **Manual** | — | — | Decimal input |
+| `Payment_Terms` | **🔄 Auto-filled** + **Editable** | `TermsCondition` table (where `Status='A'` and `Type_ID=1021`) | **🔗 No UI** — Pre-loaded DB data | Pre-filled from database on form load, user can edit |
+| `PdfFile` | **File Upload** | — | — | Saved to filesystem |
+
+### Quotation Line Items
+
+| Field | Input Method | Data Source | Managed On Page | Relationship |
+|---|---|---|---|---|
+| `Item_ID` | **Popup Lookup** | `ItemMaster` table | **🔗 Item Master page** (`/ItemMaster/Create`) | User searches items via popup: `GET /Quotation/ListJson?search=&groupId=` |
+| `Item_Code` | **🔄 Auto-filled** from item | ← `IM_Part_No` | **🔗 Item Master** | Part number |
+| `Item_Name` | **🔄 Auto-filled** from item | ← `IM_PartName` | **🔗 Item Master** | Part name |
+| `Description` | **🔄 Auto-filled** from item | ← `IM_Description` | **🔗 Item Master** | Description |
+| `HSN_Code` | **🔄 Auto-filled** from item | ← `IM_HSN_Code` | **🔗 Item Master** | HSN code |
+| `UOM` | **🔄 Auto-filled** from item | ← `IM_UOM` from UnitMaster | **🔗 Item Master → Ref Group** | Unit of measurement |
+| `Qty` | **Manual** | — | — | Decimal input |
+| `Unit_Price` | **Manual** or **🔄 Auto-filled** | ← `IM_Purchase_Rate` from item | **🔗 Item Master** | Can use item rate or override |
+| `Disc_Per` | **Manual** | — | — | Discount percentage |
+| `Desc_Amt` | **🔄 Calculated** | `Unit_Price × Disc_Per / 100` | — | Auto-calculated on input (see §17.8) |
+| `Final_Price` | **🔄 Calculated** | `Unit_Price - Desc_Amt` | — | Auto-calculated (see §17.8) |
+| `Sub_total` | **🔄 Calculated** | `Qty × Final_Price` | — | Auto-calculated (see §17.8) |
+| `GST_Per` | **🔄 Auto-filled** | From selected `TaxId` header → `Tax_Master.TM_Tax_Percent` | **🔗 Tax Master** | Applied from header tax selection |
+| `SGST_Per` / `CGST_Per` | **🔄 Calculated** | `GST_Per / 2` (if local via TaxTypeId) | — | Split: half SGST + half CGST for local (see §17.8) |
+| `IGST_Per` | **🔄 Calculated** | `= GST_Per` (if interstate via TaxTypeId) | — | Full IGST for interstate (see §17.8) |
+| `GST_Amt` | **🔄 Calculated** | `Sub_total × GST_Per / 100` | — | Tax amount (see §17.8) |
+| `Net_Amt` | **🔄 Calculated** | `Sub_total + GST_Amt` | — | Line total (see §17.8) |
+| `Currency` | **🔄 Auto-filled** | From `CurrencyTypeId` header | **🔗 Ref Group** | Currency code |
+| `Exchange_Rate_Price` | **🔄 Calculated** | `Unit_Price / Exchange_Rate` | — | Auto-calculated (see §17.8) |
+
+### Quotation Summary (Footer Calculations)
+
+| Field | Input Method | Formula | Relationship |
+|---|---|---|---|
+| `Total_Before_Disc` | **🔄 Calculated** | `Σ(all line Sub_total)` | — |
+| `Sdiscount` | **Manual** | — | Flat discount input |
+| `Desc_Per` | **Manual** | — | Discount percentage |
+| `Desc_Amt` | **🔄 Calculated** | `Total_Before_Disc × Desc_Per / 100` | — |
+| `Freight_Amount` | **Manual** | — | Shipping/freight input |
+| `Packing_Forward` | **Manual** | — | Packing charges input |
+| `Taxable_Amount` | **🔄 Calculated** | `Total - Discount + Freight + Packing` | — |
+| `MIGST_Amt` | **🔄 Calculated** | `Taxable_Amount × IGST_Per / 100` | — |
+| `MSGST_Amt` | **🔄 Calculated** | `Taxable_Amount × SGST_Per / 100` | — |
+| `MCGST_Amt` | **🔄 Calculated** | `Taxable_Amount × CGST_Per / 100` | — |
+| `GrandTotal` | **🔄 Calculated** | `Taxable_Amount + All Tax Amounts` | — |
+| `RoundOff` | **🔄 Calculated** | `Round(GrandTotal) - GrandTotal` | — |
+| `Net_Amt` | **🔄 Calculated** | `GrandTotal + RoundOff` | Final amount |
+
+---
+
+## 13. Tax Master Page — Field Data Lineage
+
+| Field | Input Method | Data Source | Managed On Page | Relationship |
+|---|---|---|---|---|
+| `LedgerID` | **Dropdown** | `TaxLedgerNameMaster` → `ZTM_qryTaxLedgerNameMaster` | **🔗 Ledger Master page** (`/LedgerMaster/Create`) | Tax ledger accounts created on Ledger Master |
+| `TM_Tax_Percent` | **Manual** + **AJAX duplicate** | — | — | AJAX: `CheckTaxPercent` — prevents duplicate slabs |
+| `TM_CGST_Tax` | **Manual** | — | — | Used by Quotation for local tax split |
+| `TM_SGST_Tax` | **Manual** | — | — | Used by Quotation for local tax split |
+| `TM_IGST_Tax` | **Manual** | — | — | Used by Quotation for interstate tax |
+| `TM_PCGST/PSGST/PIGST` | **Manual** | — | — | Purchase-specific tax rates |
+| `TM_SCGST/SSGST/SIGST` | **Manual** | — | — | Sales-specific tax rates |
+
+> [!IMPORTANT]
+> Tax records created here appear as **TaxId dropdown** on: **Item Master** (via `qryItemTaxGroupMaster`) and **Quotation** pages (as tax slab selection).
+
+---
+
+## 14. Reference Group Value Page — Field Data Lineage
+
+| Field | Input Method | Data Source | Managed On Page | Relationship |
+|---|---|---|---|---|
+| `RG_iID` | **Dropdown** | `ReferenceGroupMaster` table | **🔗 Ref Group Master page** (`/ReferenceGroupMaster/Create`) | Selects parent category |
+| `RGV_vCode` | **🔄 Auto-generated** via AJAX | Stored procedure: `Pr_Fetch_RGV_vCode` | — | AJAX: `GET /ReferenceGroupValue/GetVCode?id=` → next code for selected group (see §17.1) |
+| `RGV_vDesciption` | **Manual** + **AJAX duplicate** | — | — | AJAX: `CheckReferenceGroupValue` |
+
+> [!IMPORTANT]
+> **This is the hub page.** Every value created here flows to one or more dropdown lists across the entire system via SQL views.
+
+---
+
+## 15. Complete Cross-Page Dependency Map
+
+```mermaid
+flowchart TB
+    subgraph "Configuration Hub"
+        RGM["Ref Group Master\n(Category names)"]
+        RGV["Ref Group Value\n(Dropdown options)"]
+        TAX["Tax Master\n(GST slabs)"]
+        LED["Ledger Master\n(Tax Ledger A/C)"]
+        SYS["System Info Master\n(Device registry)"]
+    end
+    
+    subgraph "Master Pages"
+        CMP["Company Master"]
+        EMP["Employee Master"]
+        CUS["Customer Master"]
+        SUP["Supplier Master"]
+        CON["Contractor Master"]
+        MAC["Machine Master"]
+        PRC["Process Master"]
+        VEH["Vehicle Master"]
+        IGM["Item Group Master"]
+        ITM["Item Master"]
+        PNB["Part Number Base"]
+    end
+    
+    subgraph "Transaction Pages"
+        QOT["Quotation"]
+        INV["Invoice"]
+        APO["Auto PO"]
+    end
+    
+    RGM -->|"parent category"| RGV
+    RGV -->|"Department, Designation"| EMP
+    RGV -->|"Company Type"| CMP
+    RGV -->|"Customer Type"| CUS
+    RGV -->|"Supplier Type"| SUP
+    RGV -->|"Machine Category, Vendor"| MAC
+    RGV -->|"Process Type, Team"| PRC
+    RGV -->|"Vehicle Model, Sub-Type, Name"| VEH
+    RGV -->|"Item Model, UOM, Sub Group, Store, Type, QC Type, Currency, Material Grade/Type, Raw Material"| ITM
+    RGV -->|"Quotation Type, Grade, Tax Type, Currency Type"| QOT
+    
+    LED -->|"LedgerID dropdown"| TAX
+    TAX -->|"TaxId dropdown"| ITM
+    TAX -->|"TaxId dropdown"| QOT
+    
+    CMP -->|"CompanyId dropdown"| EMP
+    CON -->|"ContractId dropdown"| EMP
+    
+    CUS -->|"Customer dropdown + AJAX auto-fill"| VEH
+    CUS -->|"Customer dropdown + AJAX auto-fill"| QOT
+    
+    MAC -->|"Machine_id link"| PRC
+    
+    IGM -->|"GroupId dropdown"| ITM
+    PNB -->|"PrefixId dropdown"| IGM
+    
+    ITM -->|"Item_ID popup lookup"| QOT
+    ITM -->|"ReorderLevel/MinStock"| APO
+    
+    SYS -->|"Audit trail on ALL pages"| CMP
+    SYS -->|"Audit trail"| EMP
+    SYS -->|"Audit trail"| CUS
+    SYS -->|"Audit trail"| SUP
+    SYS -->|"Audit trail"| CON
+    SYS -->|"Audit trail"| MAC
+    SYS -->|"Audit trail"| VEH
+    SYS -->|"Audit trail"| ITM
+    SYS -->|"Audit trail"| RGV
+    SYS -->|"Audit trail"| RGM
+    SYS -->|"Audit trail"| TAX
+    SYS -->|"Audit trail"| LED
+```
+
+---
+
+## 16. Audit Trail Fields — Universal Pattern
+
+These fields are **system-captured** (never user-typed) on **every Create/Edit/Delete** operation across all master and transaction pages:
+
+| Field | How Obtained | Source | Page Dependency |
+|---|---|---|---|
+| `IPAddress` | `Request.UserHostAddress` | HTTP request | None — auto from server |
+| `MACAddress` | **DB Lookup** by IP | `SystemInfo.Where(IP == requestIP).Select(MACAddress)` | **🔗 System Info Master** — devices must be registered |
+| `DeviceName` | **DB Lookup** by IP | `SystemInfo.Where(IP == requestIP).Select(DeviceName)` | **🔗 System Info Master** |
+| `WindowsLoginUsername` | **DB Lookup** by IP | `SystemInfo.Where(IP == requestIP).Select(USERNAME)` | **🔗 System Info Master** |
+| `Department` | **DB Lookup** by IP | `SystemInfo.Where(IP == requestIP).Select(DEPT)` | **🔗 System Info Master** |
+| `CreatedDate` / `UpdatedDate` | `DateTime.Now` | Server clock | None |
+
+> [!WARNING]
+> If a workstation's IP is not registered in the System Info Master page, the audit trail fields (MAC, Device, User) will be **null**. Every workstation MUST be registered first.
+
+---
+
+## 17. 🔄 Auto-Update Field Reference — Exact Mechanisms & Formulas
+
+> [!IMPORTANT]
+> This section documents **every field that auto-updates** — the exact stored procedure, SQL query, AJAX endpoint, C# server-side code, or client-side JavaScript formula used for each one.
+
+---
+
+### 17.1 Auto-Generated Codes (Stored Procedures)
+
+#### Company Code (`CompanyCode`)
+- **Page**: Company Master
+- **Trigger**: On form load (before user types anything)
+- **Mechanism**: Client-side AJAX → Server → Stored Procedure
+- **Flow**:
+  ```
+  Page Load → JS $.ajax GET /CompanyMaster/GetCCode
+    → Controller: CompanyMasterController.GetCCode()
+      → Repository: CompanyMasterConcrete.FetchCCode()
+        → SQL: EXEC Pr_Fetch_Company_Code
+    → Response: { cCode: "C0001" }
+    → JS: $('#CompanyCode').val(data.cCode)
+  ```
+- **Stored Procedure**: `Pr_Fetch_Company_Code`
+  - Returns next available company code
+  - Result mapped to `CCodeResult.cCode`
+- **Field State**: `readonly="readonly"` — user cannot edit
+- **C# Code** (Repository):
+  ```csharp
+  public string FetchCCode()
+  {
+      var result = _context.Database.SqlQuery<CCodeResult>(
+          "EXEC Pr_Fetch_Company_Code"
+      ).FirstOrDefault();
+      return result?.cCode;
+  }
+  ```
+
+#### Reference Group Value Code (`RGV_vCode`)
+- **Page**: Reference Group Value
+- **Trigger**: When user selects a Reference Group from the dropdown
+- **Mechanism**: Client-side AJAX → Server → Stored Procedure
+- **Flow**:
+  ```
+  User selects RG_iID dropdown
+    → JS $.ajax GET /ReferenceGroupValue/GetVCode?id={selectedGroupId}
+      → Controller: ReferenceGroupValueController.GetVCode(id)
+        → Repository: ReferenceGroupValueConcrete.FetchVCode(id)
+          → SQL: EXEC Pr_Fetch_RGV_vCode @id
+      → Response: { vCode: "D005" }
+      → JS: sets RGV_vCode input value
+  ```
+- **Stored Procedure**: `Pr_Fetch_RGV_vCode @id`
+  - Takes the selected Reference Group ID as parameter
+  - Returns next sequential code within that group
+  - Result mapped to `VCodeResult.vCode`
+- **C# Code** (Repository):
+  ```csharp
+  public string FetchVCode(int id)
+  {
+      var result = _context.Database.SqlQuery<VCodeResult>(
+          "EXEC Pr_Fetch_RGV_vCode @id",
+          new SqlParameter("@id", id)
+      ).FirstOrDefault();
+      return result?.vCode;
+  }
+  ```
+
+---
+
+### 17.2 Auto-Generated Part Numbers (SQL Functions & Queries)
+
+#### Item Part Number (`IM_Part_No`)
+- **Page**: Item Master
+- **Trigger**: On **save** (server-side, not on form load)
+- **Mechanism**: Server-side C# → SQL Scalar Function
+- **Flow**:
+  ```
+  User clicks Save → POST /ItemMaster/Create
+    → Repository: ItemMasterConcrete.AddItemMaster(itemMaster)
+      → groupname = GetGroupNameByGroupId(itemMaster.GroupId)
+      → PartNo = _context.GetMaxItemPartNumber(groupname)
+        → SQL: SELECT dbo.Z_GetMaximumPartNumberPlusOne1NEW1(@p0)
+      → itemMaster.IM_Part_No = PartNo
+      → _context.ItemMaster.Add(itemMaster)
+      → _context.SaveChanges()
+  ```
+- **SQL Function**: `dbo.Z_GetMaximumPartNumberPlusOne1NEW1(@itemGroup)`
+  - Takes the item group name as parameter
+  - Returns next part number in the group's sequence as a string
+  - Includes 5-digit zero-padded numbers
+  - Has retry logic: if the returned PartNo is `"AutoIncremented Item Part Number Already Exists"`, the function is called again
+- **C# Code** (DatabaseContext):
+  ```csharp
+  public string GetMaxItemPartNumber(string itemGroup)
+  {
+      var result = this.Database.SqlQuery<string>(
+          "SELECT dbo.Z_GetMaximumPartNumberPlusOne1NEW1(@p0)", itemGroup
+      ).FirstOrDefault();
+      return result;
+  }
+  ```
+
+#### Outsource Part Number (`Outsource_Part_No`)
+- **Page**: Item Master
+- **Trigger**: On save (server-side)
+- **Mechanism**: Server-side C# → SQL Query
+- **Formula**: `"VOS" + MAX(MAXOSPN) from view`
+- **Flow**:
+  ```
+  → Repository: _context.GetMaxItemOutSourcePartNumber()
+    → SQL: SELECT TOP 1 MAXOSPN FROM qryItemMasterDisplayAllSplitOutSourcePNO2MAXSTATUS
+    → C#: result = "VOS" + queryResult.ToString()
+  ```
+- **C# Code** (DatabaseContext):
+  ```csharp
+  public string GetMaxItemOutSourcePartNumber()
+  {
+      var result = this.Database.SqlQuery<int>(
+          "SELECT TOP 1 MAXOSPN FROM qryItemMasterDisplayAllSplitOutSourcePNO2MAXSTATUS"
+      ).FirstOrDefault();
+      var result1 = "VOS" + result.ToString();
+      return result1;
+  }
+  ```
+
+#### Vehicle Serial Number (`Serial_No`)
+- **Page**: Vehicle Master
+- **Trigger**: When user selects a Vehicle Model Number from dropdown
+- **Mechanism**: Client-side AJAX → Server → SQL Query with Financial Year Filter
+- **Flow**:
+  ```
+  User selects Vehicle_Model_No_Id
+    → JS $.ajax GET /VehicleMaster/GetMaxSno?modelNo={selectedModelId}
+      → Controller: VehicleMasterController.GetMaxSno(modelNo)
+        → DatabaseContext: _context.GetMaxSnoPartNumber(modelNo)
+          → Determines financial year range (April-March)
+          → SQL: SELECT ISNULL(MAX(CAST(SNoPartNumber AS INT)), 0) + 1
+                 FROM VMAAqryVehicleMasterDetailsDisplaySplitSNoNumber
+                 WHERE Vehicle_Model_No_Id = @p0
+                 AND TRY_CAST(Created_Date AS DATE) BETWEEN @p1 AND @p2
+      → Response: { MaxSno: 15 }
+      → JS: sets Serial_No input value
+  ```
+- **Financial Year Logic** (C#):
+  ```csharp
+  DateTime inputDate = DateTime.Now;
+  DateTime startDate, endDate;
+  if (inputDate.Month >= 4) // April or later → current year FY
+  {
+      startDate = new DateTime(inputDate.Year, 4, 1);
+      endDate = new DateTime(inputDate.Year + 1, 3, 31);
+  }
+  else // Jan–Mar → previous year FY
+  {
+      startDate = new DateTime(inputDate.Year - 1, 4, 1);
+      endDate = new DateTime(inputDate.Year, 3, 31);
+  }
+  ```
+- **Result**: `MAX(SNoPartNumber) + 1` within the financial year, scoped to the selected model number. Starts at 1 if no records exist.
+
+---
+
+### 17.3 Auto-Generated Transaction Numbers
+
+#### Quotation Number (`PO_No`)
+- **Page**: Quotation
+- **Trigger**: On form load (Create action, server-side)
+- **Mechanism**: Server-side C# — generated in controller before view renders
+- **Format**: `YY-YY/QXXXXX` (e.g., `25-26/Q00001`)
+- **Flow**:
+  ```
+  GET /Quotation/Create
+    → Controller: QuotationController.Create()
+      → Step 1: Get financial year string
+        string fy = GetFinancialYearString(DateTime.Today)
+        // If month >= April: "YY-(YY+1)", e.g. "25-26"
+        // If month < April: "(YY-1)-YY", e.g. "24-25"
+      → Step 2: Build prefix
+        string prefix = fy + "/Q"  // e.g. "25-26/Q"
+      → Step 3: Find max existing number
+        maxNumber = _context.QuotationEntries
+          .Where(q => q.PO_No.StartsWith(prefix))
+          .AsEnumerable()
+          .Select(q => q.PO_No.Split('Q')[1])
+          .Select(numStr => ParseIntOrZero(numStr))
+          .DefaultIfEmpty(0)
+          .Max()
+      → Step 4: Increment and pad
+        int nextNumber = maxNumber + 1
+        model.PO_No = $"{fy}/Q{nextNumber.ToString("D5")}"
+        // Result: "25-26/Q00001"
+  ```
+- **C# Code** (Controller):
+  ```csharp
+  public string GetFinancialYearString(DateTime date)
+  {
+      int year = date.Month >= 4 ? date.Year : date.Year - 1;
+      int nextYear = year + 1;
+      return (year % 100).ToString("D2") + "-" + (nextYear % 100).ToString("D2");
+  }
+  ```
+- **Field State**: Auto-filled before page renders — user sees it pre-populated
+
+---
+
+### 17.4 AJAX Auto-Fill Cascades (Customer Selection)
+
+#### Vehicle Master — Customer Selection Cascade
+- **Trigger**: User selects `Customer_Id` from dropdown
+- **AJAX Endpoint**: `GET /VehicleMaster/GetCustomerDetails?customerId={id}`
+- **Fields Auto-Filled**:
+
+| Target Field | Source Field | Source Table |
+|---|---|---|
+| `Customer_Code` | `LM_Code` | `LedgerMaster` |
+| `LM_Address1` | `LM_Address1` | `LedgerMaster` |
+| `LM_Address2` | `LM_Address2` | `LedgerMaster` |
+| `LM_Address3` | `LM_Address3` | `LedgerMaster` |
+| `LM_Address4` | `LM_Address4` | `LedgerMaster` |
+| `LM_Address5` | `LM_Address5` | `LedgerMaster` |
+| `LM_State` | `LM_State` | `LedgerMaster` |
+| `LM_Area` | `LM_Area` | `LedgerMaster` |
+| `LM_StateCode` | `LM_StateCode` | `LedgerMaster` |
+| `LM_Contact_Person` | `LM_Contact_Person` | `LedgerMaster` |
+| `LM_Phone_Number` | `LM_Phone_Number` | `LedgerMaster` |
+
+- **C# Code** (Controller):
+  ```csharp
+  [HttpGet]
+  public JsonResult GetCustomerDetails(int customerId)
+  {
+      var customer = _customerMaster.GetCustomerDetailsByCustomerId(customerId);
+      return Json(new {
+          LM_Code = customer.LM_Code,
+          LM_Address1 = customer.LM_Address1,
+          LM_Address2 = customer.LM_Address2,
+          LM_Address3 = customer.LM_Address3,
+          LM_Address4 = customer.LM_Address4,
+          LM_Address5 = customer.LM_Address5,
+          LM_State = customer.LM_State,
+          LM_Area = customer.LM_Area,
+          LM_StateCode = customer.LM_StateCode,
+          LM_Contact_Person = customer.LM_Contact_Person,
+          LM_Phone_Number = customer.LM_Phone_Number
+      }, JsonRequestBehavior.AllowGet);
+  }
+  ```
+
+#### Vehicle Master — Vehicle Count Auto-Fill
+- **Trigger**: User selects `Customer_Id` from dropdown
+- **AJAX Endpoint**: `GET /VehicleMaster/GetVehicleCountDetails?customerId={id}`
+- **Field Auto-Filled**: `Customer_Vehicle_Count`
+- **Logic**: `MAX(Customer_Vehicle_Count)` from `VehicleMaster` table filtered by `Customer_Id`
+
+#### Quotation — Item Selection Cascade
+- **Trigger**: User selects an item from the popup lookup
+- **AJAX Endpoint**: `GET /Quotation/GetItemData?itemId={id}&gstType={Local|Interstate}`
+- **Fields Auto-Filled**:
+
+| Target Field | Source Field | Source Table |
+|---|---|---|
+| `Item_Code` | `IM_Part_No` | `ItemMaster` |
+| `Item_Name` | `IM_PartName` | `ItemMaster` |
+| `Description` | `IM_Description` | `ItemMaster` |
+| `HSN_Code` | `IM_HSN_Code` | `ItemMaster` |
+| `UOM` | `UnitName` from `ItemUnitMaster` | Joined via `UnitId` |
+| `Unit_Price` | `IM_Purchase_Rate` | `ItemMaster` |
+| `GST_Per` | `IM_GST_Per` | `ItemMaster` |
+
+- **GST Split Logic** (C#):
+  ```csharp
+  if (gstType == "Local")
+  {
+      vm.SGST_Per = (decimal)item.IM_GST_Per / 2;
+      vm.CGST_Per = (decimal)item.IM_GST_Per / 2;
+      vm.IGST_Per = 0;
+  }
+  else // Interstate
+  {
+      vm.SGST_Per = 0;
+      vm.CGST_Per = 0;
+      vm.IGST_Per = (decimal)item.IM_GST_Per;
+      vm.GST_Per = 0;
+  }
+  ```
+
+---
+
+### 17.5 AJAX Autocomplete with Auto-Fill Side Effects
+
+#### State Name → State Code Auto-Fill
+- **Page**: Customer Master, Supplier Master
+- **Trigger**: User types in `LM_State` field → jQuery UI Autocomplete fires
+- **AJAX Endpoint**: `GET /CustomerMaster/GetStateName?term={typed_text}`
+- **Response Format**: `[{ label: "Tamil Nadu", value: "33" }, ...]`
+  - `label` = `StateMaster.StateName` (displayed to user)
+  - `value` = `StateMaster.StateCode` (auto-fills `LM_StateCode`)
+- **Behavior**: When user selects a state from the autocomplete dropdown, the `value` (StateCode) is automatically placed into the `LM_StateCode` field by jQuery UI Autocomplete's default behavior.
+- **C# Code** (Controller):
+  ```csharp
+  [HttpGet]
+  public JsonResult GetStateName(string term)
+  {
+      var products = _context.StateMaster
+          .Where(p => p.StateName.Contains(term))
+          .Select(p => new { label = p.StateName, value = p.StateCode })
+          .Distinct()
+          .ToList();
+      return Json(products, JsonRequestBehavior.AllowGet);
+  }
+  ```
+
+---
+
+### 17.6 Pre-Filled Fields (Database Lookup on Form Load)
+
+#### Payment Terms
+- **Page**: Quotation
+- **Trigger**: On form load (Create action)
+- **Mechanism**: Server-side C# — loaded from `TermsCondition` table
+- **C# Code**:
+  ```csharp
+  var terms = _context.TermsCondition.AsNoTracking()
+      .Where(x => x.Status == "A" && x.Type_ID == 1021)
+      .FirstOrDefault();
+  if (terms != null)
+  {
+      model.Payment_Terms = terms.Terms_Condition;
+  }
+  ```
+- **User can edit**: Yes — the pre-filled value can be modified by the user before saving
+
+---
+
+### 17.7 System-Captured Timestamp & User Fields
+
+These are set by C# code in the repository layer on every CRUD operation:
+
+| Operation | Field Set | C# Code |
+|---|---|---|
+| **Create** | `CreatedDate` / `IM_CreatedDate` / `RGV_dCreatedDate` / `Created_Date` | `entity.CreatedDate = DateTime.Now;` |
+| **Update** | `UpdatedDate` / `Updated_Date` / `RGV_dUpdateDate` | `entity.UpdatedDate = DateTime.Now;` |
+| **Delete** (soft) | `Deleted_Date` / `RGV_dDeletedDate` | `entity.Deleted_Date = DateTime.Now;` |
+| **Undelete** | `UnDeleted_Date` | `entity.UnDeleted_Date = DateTime.Now;` |
+| **Create** | `CreatedBy` / `LM_Createdby` / `Created_By` | From `Session["UserID"]` or `SystemInfo.USERNAME` by IP |
+| **Update** | `UpdatedBy` / `Updated_By` / `LM_Updated_by` | From `Session["UserID"]` or `SystemInfo.USERNAME` by IP |
+
+#### Audit Trail Pattern (applied on every Create/Edit/Delete):
+```csharp
+string IpAddress = Request.UserHostAddress;
+
+var macAddress = _context.SystemInfo
+    .Where(item => item.IPAddress == IpAddress)
+    .OrderByDescending(item => item.ID)
+    .Select(item => item.MACAddress)
+    .FirstOrDefault();
+
+var deviceName = _context.SystemInfo
+    .Where(item => item.IPAddress == IpAddress)
+    .OrderByDescending(item => item.ID)
+    .Select(item => item.DeviceName)
+    .FirstOrDefault();
+
+var userName = _context.SystemInfo
+    .Where(item => item.IPAddress == IpAddress)
+    .OrderByDescending(item => item.ID)
+    .Select(item => item.USERNAME)
+    .FirstOrDefault();
+
+// Create fields:  IPAddress, MACAddress, DeviceName, Created_By
+// Update fields:  UIPAddress, UMACAddress, UDeviceName, Updated_By
+// Delete fields:  DIPAddress, DMACAddress, DDeviceName, Deleted_by
+```
+
+---
+
+### 17.8 Client-Side Calculated Fields (Quotation JavaScript)
+
+The Quotation line item calculations are performed by JavaScript on the client when user changes `Qty`, `Discount`, or `GST` values:
+
+```javascript
+// Triggered on: input change of .qty, .discount, .gst
+var unitPrice   = parseFloat(row.find('td:eq(2)').text());
+var qty         = parseFloat(row.find('.qty').val()) || 0;
+var discountPer = parseFloat(row.find('.discount').val()) || 0;
+var gstPer      = parseFloat(row.find('.gst').val()) || 0;
+
+// Line item formulas:
+var discountAmt = (unitPrice * qty) * (discountPer / 100);
+var gstAmt      = ((unitPrice * qty) - discountAmt) * (gstPer / 100);
+var rowTotal    = (unitPrice * qty) - discountAmt + gstAmt;
+```
+
+#### Complete Calculation Chain:
+
+```
+                          ┌─── Manual ──────────── Unit_Price
+                          ├─── Manual ──────────── Qty
+                          ├─── Manual ──────────── Disc_Per
+                          │
+Desc_Amt ─────────────────┤  Formula: Unit_Price × Qty × Disc_Per / 100
+                          │
+Final_Price ──────────────┤  Formula: Unit_Price - (Desc_Amt / Qty)
+                          │
+Sub_total ────────────────┤  Formula: Qty × Final_Price
+                          │      OR:  (Unit_Price × Qty) - Desc_Amt
+                          │
+        ┌─ If Local ──────┤  SGST_Per = GST_Per / 2
+        │                 │  CGST_Per = GST_Per / 2
+        │                 │  IGST_Per = 0
+GST ────┤
+        │                 │
+        └─ If Interstate ─┤  IGST_Per = GST_Per
+                          │  SGST_Per = 0
+                          │  CGST_Per = 0
+                          │
+GST_Amt ──────────────────┤  Formula: Sub_total × GST_Per / 100
+                          │
+Net_Amt (line) ───────────┤  Formula: Sub_total + GST_Amt
+                          │
+Exchange_Rate_Price ──────┤  Formula: Unit_Price / Exchange_Rate
+
+
+========== FOOTER (Summary Totals) ==========
+
+Total_Before_Disc ────────┤  Formula: Σ(line Sub_total)
+                          │
+Desc_Amt (footer) ────────┤  Formula: Total_Before_Disc × Desc_Per / 100
+                          │      OR:  = Sdiscount (flat amount)
+                          │
+Taxable_Amount ───────────┤  Formula: Total - Disc + Freight + Packing
+                          │
+MIGST_Amt ────────────────┤  Formula: Taxable_Amount × IGST_Per / 100
+MSGST_Amt ────────────────┤  Formula: Taxable_Amount × SGST_Per / 100
+MCGST_Amt ────────────────┤  Formula: Taxable_Amount × CGST_Per / 100
+                          │
+GrandTotal ───────────────┤  Formula: Taxable + All Taxes
+                          │
+RoundOff ─────────────────┤  Formula: Round(Grand) - Grand
+                          │
+Net_Amt (final) ──────────┤  Formula: Grand + RoundOff
+```
+
+#### Server-Side Totals Calculation (`CalculateTotals` endpoint):
+```csharp
+[HttpPost]
+public JsonResult CalculateTotals(List<OrderItemViewModel> items)
+{
+    decimal totalPrice = 0;
+    decimal totalSGSTAmt = 0, totalCGSTAmt = 0;
+    decimal totalGSTAmt = 0, totalIGSTAmt = 0;
+    decimal totalCurrencyValue = 0;
+    foreach (var item in items)
+    {
+        totalPrice += item.Sub_total;
+        totalSGSTAmt += item.SGST_Amt;
+        totalCGSTAmt += item.CGST_Amt;
+        totalGSTAmt += item.GST_Amt;
+        totalIGSTAmt += item.IGST_Amt;
+        totalCurrencyValue += item.Currency_Rate_Total;
+    }
+    return Json(new {
+        Total_Before_GST = totalPrice.ToString("0.00"),
+        Sub_total_before_dis = totalPrice.ToString("0.00"),
+        Total_Currency = totalCurrencyValue.ToString("0.00"),
+    });
+}
+```
+
+---
+
+### 17.9 Auto-Update Summary Table
+
+| Field | Page | Update Type | When | Formula / Source |
+|---|---|---|---|---|
+| `CompanyCode` | Company Master | 🔄 Auto-generated | Form load | SP: `Pr_Fetch_Company_Code` |
+| `RGV_vCode` | Ref Group Value | 🔄 Auto-generated | On group select | SP: `Pr_Fetch_RGV_vCode @id` |
+| `IM_Part_No` | Item Master | 🔄 Auto-generated | On save | SQL fn: `Z_GetMaximumPartNumberPlusOne1NEW1(@group)` |
+| `Outsource_Part_No` | Item Master | 🔄 Auto-generated | On save | `"VOS" + MAX(MAXOSPN)` from view |
+| `Serial_No` | Vehicle Master | 🔄 Auto-generated | On model select | `MAX(SNoPartNumber)+1` within financial year |
+| `PO_No` | Quotation | 🔄 Auto-generated | Form load | `FY/Q` + padded MAX+1 |
+| `Customer_Code` | Vehicle Master | 🔄 AJAX Auto-fill | On customer select | `LedgerMaster.LM_Code` |
+| `LM_Address1-5` | Vehicle/Quotation | 🔄 AJAX Auto-fill | On customer select | `LedgerMaster.LM_Address1-5` |
+| `LM_StateCode` | Customer Master | 🔄 AJAX Auto-fill | On state autocomplete | `StateMaster.StateCode` (via `value`) |
+| `Contact_Person` | Quotation | 🔄 AJAX Auto-fill | On customer select | `LedgerMaster.LM_Contact_Person` |
+| `Contact_No` | Quotation | 🔄 AJAX Auto-fill | On customer select | `LedgerMaster.LM_Phone_Number` |
+| `GSTTIN` | Quotation | 🔄 AJAX Auto-fill | On customer select | `LedgerMaster.LM_GSTIN` |
+| `Vehicle_Count` | Vehicle Master | 🔄 AJAX Auto-fill | On customer select | `MAX(Customer_Vehicle_Count)` |
+| `Machine_Name` | Process Master | 🔄 Auto-filled | On machine select | `MachineMaster.Machine_Name` |
+| `Item_Code/Name/Desc` | Quotation lines | 🔄 Auto-filled | On item select | `ItemMaster` fields |
+| `GST_Per` | Quotation lines | 🔄 Auto-filled | On item select | `ItemMaster.IM_GST_Per` |
+| `SGST_Per/CGST_Per` | Quotation lines | 🔄 Calculated | On item select | `GST_Per / 2` (Local) |
+| `IGST_Per` | Quotation lines | 🔄 Calculated | On item select | `= GST_Per` (Interstate) |
+| `Desc_Amt` | Quotation lines | 🔄 Calculated | On input change | `Unit_Price × Qty × Disc_Per / 100` |
+| `Final_Price` | Quotation lines | 🔄 Calculated | On input change | `Unit_Price - Desc_Amt` |
+| `Sub_total` | Quotation lines | 🔄 Calculated | On input change | `Qty × Final_Price` |
+| `GST_Amt` | Quotation lines | 🔄 Calculated | On input change | `Sub_total × GST_Per / 100` |
+| `Net_Amt` (line) | Quotation lines | 🔄 Calculated | On input change | `Sub_total + GST_Amt` |
+| `Exchange_Rate_Price` | Quotation lines | 🔄 Calculated | On input change | `Unit_Price / Exchange_Rate` |
+| `Total_Before_Disc` | Quotation footer | 🔄 Calculated | On grid change | `Σ(line Sub_total)` |
+| `Taxable_Amount` | Quotation footer | 🔄 Calculated | On input change | `Total - Disc + Freight + Packing` |
+| `MIGST/MSGST/MCGST_Amt` | Quotation footer | 🔄 Calculated | On input change | `Taxable_Amount × Rate / 100` |
+| `GrandTotal` | Quotation footer | 🔄 Calculated | On input change | `Taxable + All Taxes` |
+| `RoundOff` | Quotation footer | 🔄 Calculated | On input change | `Round(Grand) - Grand` |
+| `Net_Amt` (final) | Quotation footer | 🔄 Calculated | On input change | `Grand + RoundOff` |
+| `Payment_Terms` | Quotation | 🔄 Pre-filled | Form load | `TermsCondition` where `Status=A, Type_ID=1021` |
+| `CreatedDate` | ALL pages | 🔄 System-captured | On save | `DateTime.Now` |
+| `IPAddress` | ALL pages | 🔄 System-captured | On save | `Request.UserHostAddress` |
+| `MACAddress` | ALL pages | 🔄 System-captured | On save | `SystemInfo.Where(IP).Select(MAC)` |
+| `DeviceName` | ALL pages | 🔄 System-captured | On save | `SystemInfo.Where(IP).Select(Device)` |
+| `Created_By` | ALL pages | 🔄 System-captured | On save | `SystemInfo.Where(IP).Select(USERNAME)` |
+
+---
+
+> **Summary**: The Reference Group Value page is the **central hub** — it feeds dropdown values to 10+ master pages through SQL views. The System Info Master page is the **audit hub** — it provides device/user information for every CRUD operation system-wide. Tax Master feeds both Item Master and Quotation. Customer Master feeds both Vehicle Master and Quotation via AJAX auto-fill cascades. All auto-generated codes use either **stored procedures** (Company Code, RGV Code) or **SQL functions/queries** (Part Numbers, Serial Numbers, Quotation Numbers), while all calculated fields use **client-side JavaScript** with server-side validation.

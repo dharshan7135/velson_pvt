@@ -1,0 +1,1175 @@
+# ManageRoles ERP — Complete Development Blueprint
+
+> **Purpose**: This document provides a **complete, detailed blueprint** of every page in the ManageRoles ERP system (all 58 controllers). For each page, it covers: workflow, input fields, field purposes, user flow, backend interactions, and recommended technologies for re-implementation.
+
+---
+
+## Table of Contents
+
+1. [System Architecture Overview](#1-system-architecture-overview)
+2. [Authentication & Registration Module](#2-authentication--registration-module)
+3. [User & Role Management Module](#3-user--role-management-module)
+4. [Dashboard Module](#4-dashboard-module)
+5. [Masters Module](#5-masters-module)
+6. [Sales Module (Quotation)](#6-sales-module-quotation)
+7. [Accounting Module](#7-accounting-module)
+8. [Quality Control Module](#8-quality-control-module)
+9. [Configuration Module](#9-configuration-module)
+10. [Inventory & Part Number Module](#10-inventory--part-number-module)
+11. [System Administration Module](#11-system-administration-module)
+12. [Complete Controller Inventory](#12-complete-controller-inventory)
+13. [Migration Technology Recommendations](#13-migration-technology-recommendations)
+
+---
+
+## 1. System Architecture Overview
+
+### 1.1 Current Architecture (ASP.NET MVC)
+
+```mermaid
+graph TB
+    subgraph "Presentation Layer"
+        V["Views - Razor .cshtml"]
+        JS["jQuery + DataTables.js"]
+    end
+    subgraph "Application Layer"
+        C["Controllers - 58 total"]
+        VM["ViewModels - 71 classes"]
+        F["Filters - Authorization"]
+        AM["AutoMapper"]
+    end
+    subgraph "Data Layer"
+        R["Repository Interfaces + Concrete"]
+        DB["DatabaseContext - EF6"]
+        SP["Stored Procedures"]
+    end
+    subgraph "Database"
+        SQL["SQL Server 2022"]
+    end
+    V --> C
+    JS --> C
+    C --> VM
+    C --> AM
+    AM --> R
+    R --> DB
+    DB --> SQL
+    SP --> SQL
+```
+
+### 1.2 Four-Layer Project Structure
+
+| Project | Purpose | Size |
+|---|---|---|
+| **ManageRoles** | Main web app — Controllers, Views, Scripts, Filters | 58 controllers |
+| **ManageRoles.Models** | Entity classes mapped to DB tables | 144 model files |
+| **ManageRoles.Repository** | Data access — interfaces + concrete | 117 files |
+| **ManageRoles.ViewModels** | DTOs, form validation, view binding | 71 ViewModel files |
+
+### 1.3 Cross-Cutting Concerns
+
+| Concern | Implementation |
+|---|---|
+| **Authentication** | Session-based (`Session["UserID"]`, `Session["Username"]`, `Session["Role"]`) |
+| **Authorization** | Custom filter `[AuthorizeSuperAdminandAdmin]` checks session role |
+| **Password Security** | AES encryption via `AesAlgorithm` class |
+| **Audit Trail** | IP, MAC, DeviceName, WindowsUsername logged on every CUD operation |
+| **ORM** | Entity Framework 6 with `DatabaseContext` (+ `InvoiceDbContext` for invoices) |
+| **Object Mapping** | AutoMapper for Model ↔ ViewModel conversions |
+| **Server-side Paging** | jQuery DataTables + jTable for server-side processing |
+| **CAPTCHA** | `CaptchaMvc` on login page |
+| **Reporting** | Crystal Reports (`CrystalDecisions`) for quotation/invoice PDFs |
+| **File Handling** | Image/PDF upload to `~/Content/images/` and `~/Content/pdfs/` |
+| **Logging** | NLog for error and event logging |
+| **Soft Delete** | Records marked as deleted (status = "D") with UnDelete capability |
+
+---
+
+## 2. Authentication & Registration Module
+
+### 2.1 Login Page
+
+**Route**: `GET /Login/Login` → `POST /Login/Login`
+
+**Workflow**:
+```mermaid
+flowchart TD
+    A["User opens Login page"] --> B["Enter Username + Password + CAPTCHA"]
+    B --> C{"CAPTCHA valid?"}
+    C -->|No| D["Show 'Error: captcha is not valid'"]
+    C -->|Yes| E{"Username exists?"}
+    E -->|No| F["Show 'Invalid Credentials'"]
+    E -->|Yes| G["Decrypt stored password via AES"]
+    G --> H{"Passwords match?"}
+    H -->|No| F
+    H -->|Yes| I["Set Session: UserID, Username"]
+    I --> J{"Check assigned role"}
+    J -->|SuperAdmin roleId=1| K["Redirect → SuperDashboard"]
+    J -->|User roleId=2| L["Redirect → UserDashboard"]
+    J -->|Admin roleId=3| M["Redirect → AdminDashboard"]
+    J -->|No role assigned| N["Show 'Access Not Assigned'"]
+```
+
+**Input Fields**:
+
+| Field | Type | Required | Validation | Purpose |
+|---|---|---|---|---|
+| `Username` | text | ✅ | `[Required]` "Username Required" | User's login identifier |
+| `Password` | password | ✅ | `[Required]` "Password Required" | User's secret credential |
+| `CAPTCHA` | image + text | ✅ | Server-side via `CaptchaMvc` | Bot prevention |
+
+**Backend Interactions**:
+- `IUserMaster.CheckUsernameExists(username)` — Check if login exists
+- `IUserMaster.GetUserByUsername(username)` — Fetch user record
+- `IPassword.GetPasswordbyUserId(userId)` — Fetch encrypted password
+- `AesAlgorithm.DecryptString(encryptedPassword)` — Decrypt for comparison
+- `ISavedAssignedRoles.GetAssignedRolesbyUserId(userId)` — Determine user's role
+- Role IDs from `Web.config` AppSettings: `SuperAdminRolekey`, `UserRolekey`, `AdminRolekey`
+
+### 2.2 Logout
+
+**Route**: `GET /Login/Logout`
+
+**Workflow**:
+1. Clear HTTP cache headers (no-cache, no-store)
+2. Expire "WebTime" cookie
+3. Clear session → `Session.Clear()` + `Session.Abandon()`
+4. Redirect to Login page
+
+### 2.3 Registration Page (Self-Service)
+
+**Route**: `GET/POST /Registration/Register`  
+**Authorization**: `[AllowAnonymous]` — No login required
+
+**Workflow**:
+```mermaid
+flowchart TD
+    A["User opens Registration page"] --> B["Fill: Username, Name, Email, Mobile, Password"]
+    B --> C{"Submit"}
+    C --> D{"Username exists? — AJAX: CheckUsername"}
+    D -->|Yes| E["Show 'Username already exists'"]
+    D -->|No| F["Create Usermaster record"]
+    F --> G["Encrypt password via AES"]
+    G --> H["Save PasswordMaster record"]
+    H --> I["Show 'Registration Successful'"]
+```
+
+**Input Fields**:
+
+| Field | Type | Required | Purpose |
+|---|---|---|---|
+| `UserName` | text | ✅ | Login username |
+| `FirstName` | text | ✅ | First name |
+| `LastName` | text | ✅ | Last name |
+| `EmailId` | email | ✅ | Email address |
+| `MobileNo` | text | ✅ | Mobile number |
+| `Gender` | select | ✅ | Gender |
+| `Password` | password | ✅ | Password (AES encrypted before storage) |
+| `ConfirmPassword` | password | ✅ | Must match Password |
+
+> [!NOTE]
+> Registration does NOT assign a role. An admin must assign the role separately via the "Assign Role to User" page. Until a role is assigned, the user cannot access any dashboard.
+
+**AJAX Endpoints**: `GET /Registration/CheckUsername?username=` — Real-time duplicate check
+
+**Backend**: `IUserMaster.AddUser()`, `IPassword.SavePassword()`
+
+---
+
+## 3. User & Role Management Module
+
+### 3.1 Create Users Page (Admin-Created)
+
+**Route**: `GET/POST /CreateUsers/Create`  
+**Authorization**: `[AuthorizeSuperAdminandAdmin]`
+
+**Workflow**:
+```mermaid
+flowchart TD
+    A["Admin opens Create User page"] --> B["Form pre-loaded with Role dropdown"]
+    B --> C["Fill Username, Password, Email, Role"]
+    C --> D{"Submit"}
+    D --> E{"Username already exists?"}
+    E -->|Yes| F["Show 'Username already exists'"]
+    E -->|No| G["Create Usermaster record — CreatedBy = Session UserID"]
+    G --> H["Encrypt password via AES"]
+    H --> I["Save PasswordMaster"]
+    I --> J["Create SavedAssignedRoles — link user to selected role"]
+    J --> K["Show 'User Created Successfully'"]
+```
+
+**Input Fields**:
+
+| Field | Type | Required | Purpose |
+|---|---|---|---|
+| `UserName` | text | ✅ | Login username for new user |
+| `FirstName` | text | ✅ | User's first name |
+| `LastName` | text | ✅ | User's last name |
+| `EmailId` | email | ✅ | User's email address |
+| `MobileNo` | text | ✅ | User's mobile number |
+| `Gender` | text | ✅ | User's gender |
+| `Password` | password | ✅ | Login password (AES encrypted) |
+| `ConfirmPassword` | password | ✅ | Must match Password |
+| `RoleId` | dropdown | ✅ | Role (from `IRole.GetAllActiveRoles()`) |
+
+**Backend**: `IUserMaster`, `IPassword`, `ISavedAssignedRoles`, `IRole`
+
+### 3.2 All Users Page (View & Delete Users)
+
+**Route**: `GET /AllUsers/Show`  
+**Authorization**: `[AuthorizeSuperAdminandAdmin]`
+
+**Workflow**: Uses **jTable** (not DataTables) — different pagination library  
+- `POST /AllUsers/UserList` — Returns paginated user list with sorting
+- `POST /AllUsers/RemoveUser?userId=` — Deletes user + password + role assignment
+
+**Table Columns**: UserId, UserName, FirstName, LastName, EmailId, Gender, Status, MobileNo
+
+> [!WARNING]
+> **SuperAdmin cannot be deleted.** The `RemoveUser` action checks if the user's role matches `SuperAdminRolekey` from config. If so, returns error: "Cannot Delete Super Admin".
+
+**Delete Cascade**: Removes from 3 tables: `Usermasters` → `PasswordMaster` → `SavedAssignedRoles`
+
+### 3.3 Role Master Page
+
+**Route**: `/RoleMaster/*` — Full CRUD  
+**Purpose**: Manage system roles (SuperAdmin, Admin, User). Standard DataTable + Create/Edit/Delete pattern.
+
+### 3.4 Menu Management
+
+| Page | Route | Purpose |
+|---|---|---|
+| **Menu Masters** | `/MenuMasters/*` | Define top-level navigation menu items (e.g., "Masters", "Sales", "Inventory") |
+| **SubMenu Masters** | `/SubMenuMaster/*` | Define sub-items under each menu (e.g., "Item Master" under "Masters"). Has `MenuId` dropdown linking to parent menu. |
+
+### 3.5 Role-Based Access Control
+
+| Page | Route | Purpose |
+|---|---|---|
+| **Assign Roles to Menu** | `/AssignRolestoMenu/*` | Control which roles see which top-level menu items |
+| **Assign Roles to SubMenu** | `/AssignRolestoSubMenu/*` | Control which roles see which sub-menu items |
+| **Assign Role to User** | `/AssignRoletoUser/*` | Assign a role to a specific user |
+| **Edit Assigned Roles** | `/EditAssignedRoles/*` | Modify existing user-role assignments |
+| **All Assigned Role Menu** | `/AllAssignedRoleMenu/*` | View all menu-role assignments with jTable pagination |
+| **All Assigned Role SubMenu** | `/AllAssignedRoleSubMenu/*` | View all submenu-role assignments with jTable pagination |
+| **All Roles** | `/AllRoles/*` | View all role records |
+
+---
+
+## 4. Dashboard Module
+
+### 4.1 Super Admin Dashboard
+
+**Route**: `GET /SuperDashboard/Dashboard`  
+**Authorization**: `[AuthorizeSuperAdminandAdmin]`
+
+**Features**:
+- Shows main dashboard view
+- `ShowMenus()` renders menus via `PartialView("ShowMenu")` using `IMenu.GetAllActiveMenuSuperAdmin()`
+- Has error handling — displays friendly error view if menus fail to load
+
+### 4.2 Admin Dashboard
+
+**Route**: `GET /AdminDashboard/Dashboard`  
+**Authorization**: `[AuthorizeSuperAdminandAdmin]`
+- Renders same dashboard layout but with admin-specific menu filtering
+
+### 4.3 User Dashboard
+
+**Route**: `GET /UserDashboard/Dashboard`  
+- Standard user view with limited menu items based on role assignments
+
+---
+
+## 5. Masters Module
+
+### 5.1 Company Master Page
+
+**Route**: `GET/POST /CompanyMaster/Create`, `/CompanyMaster/Edit/{id}`, `/CompanyMaster/Delete/{id}`
+
+**Workflow**:
+```mermaid
+flowchart TD
+    A["Index: DataTable listing all companies"] --> B["Click 'Add New'"]
+    B --> C["Create form with tabbed sections"]
+    C --> D["Fill company details"]
+    D --> E{"Validate: Company Name unique?"}
+    E -->|No| F["Show 'Duplicate' error"]
+    E -->|Yes| G["Auto-generate Company Code via GetCCode()"]
+    G --> H["AutoMapper → CompanyMasterNew entity"]
+    H --> I["Save via AddCompanyMasterNew()"]
+    I --> J["Show 'Created Successfully'"]
+```
+
+**Input Fields** (organized by section):
+
+#### Section 1: Basic Info
+| Field | Type | Required | Purpose |
+|---|---|---|---|
+| `CompanyCode` | text | ✅ | Auto-generated unique company identifier |
+| `CompanyName` | text | ✅ | Full legal company name |
+| `CompanyTypeId` | dropdown | ✅ | Type (from `CompanyTypeMaster`) with custom `CompanyTypeValidate` |
+
+#### Section 2: Address (11 fields)
+| Field | Type | Required | Purpose |
+|---|---|---|---|
+| `DoorNumber` | text | ✅ | Building/door number |
+| `Street` | text | ✅ | Street name |
+| `Place` | text | ✅ | Place/locality |
+| `Post` | text | ✅ | Post office |
+| `City` | text | ✅ | City name |
+| `Taluk` | text | ✅ | Taluk/sub-district |
+| `District` | text | ✅ | District name |
+| `DistrictCode` | number | ✅ | Numeric district code |
+| `State` | text | ✅ | State name |
+| `StateCode` | number | ✅ | State code (for GST) |
+| `Country` | text | ✅ | Country name |
+| `PinCode` | text | ✅ | Postal/ZIP code |
+| `FullAddress` | textarea | ✅ | Complete address (stored as `varbinary`) |
+
+#### Section 3: Tax & Legal
+| Field | Type | Required | Purpose |
+|---|---|---|---|
+| `GSTIN` | text | ✅ | GST Identification Number (15-char) |
+| `PanNo` | text | ✅ | PAN card number |
+
+#### Section 4: Contact Details — 5 departments × 3 fields = 15 fields
+Each department (Company, Marketing, Purchase, Sales, Service):
+- `{Dept}PhoneNumber` (text, ✅)
+- `{Dept}EMailId` (email, ✅)
+- `{Dept}WebsiteURL` (url, ✅)
+
+#### Section 5: Bank Details (11 fields)
+| Field | Type | Required | Purpose |
+|---|---|---|---|
+| `BankAccountType` | text | ✅ | Savings/Current |
+| `BankAccountName` | text | ✅ | Account holder name |
+| `BankAccountNumber` | text | ✅ | Account number |
+| `BankName` | text | ✅ | Bank name |
+| `BankIFSCCode` | text | ✅ | IFSC for NEFT/RTGS |
+| `BankMICRCode` | text | ✅ | MICR code |
+| `BankBranch` | text | ✅ | Branch name |
+| `BankDistrict` | text | ✅ | Branch district |
+| `BankState` | text | ✅ | Branch state |
+| `BankPinCode` | text | ✅ | Branch PIN |
+| `BankCountry` | text | ✅ | Branch country |
+| `BankFullAddress` | textarea | ✅ | Complete bank address |
+
+#### Section 6: Branding
+| Field | Type | Required | Purpose |
+|---|---|---|---|
+| `CLogoImagePath` | file | ✅ | Company logo upload |
+| `Status` | select | ✅ | Active/Inactive |
+
+**Total: ~50 input fields**
+
+**Backend**: `ICompanyMaster` → `CompanyMasterConcrete` → `DatabaseContext.CompanyMasterNew`
+
+---
+
+### 5.2 Employee Master Page
+
+**Route**: `/EmployeeMaster/Create`, `/EmployeeMaster/Edit`
+
+**Input Fields**:
+
+| Field | Type | Required | Dropdown Source | Purpose |
+|---|---|---|---|---|
+| `EM_Code` | text | ✅ | — | Unique employee identifier |
+| `EM_Employee_Name` | text | ✅ | — | Full employee name |
+| `DepartmentId` | dropdown | ✅ | `DepartmentMaster` | Department assignment |
+| `DesignationId` | dropdown | — | `DesignationMaster` | Job designation |
+| `ContractId` | dropdown | — | `ContractPersonMaster` | Contract person reference |
+| `CompanyId` | dropdown | — | `CompanyNameMaster` | Company assignment |
+| `Address` | textarea | — | — | Home address |
+| `Contact_No` | text | — | — | Phone/mobile |
+| `Adhar_No` | text | — | — | Aadhaar (12-digit govt ID) |
+| `Join_Date` | date | — | — | Start date (default: today) |
+| `EM_DOB` | date | — | — | Date of birth |
+| `Releving_Date` | text | — | — | Relieving date |
+| `EM_Team` | text | — | — | Team assignment |
+| `EM_Email_ID` | email | — | — | Email address |
+| `EM_Rep_Person` | text | — | — | Reporting person |
+| `EM_Status` | select | — | — | Active/Inactive |
+
+**Backend**: `IEmployeeMaster` → `EmployeeMasterConcrete`
+
+---
+
+### 5.3 Customer Master Page
+
+**Route**: `/CustomerMaster/Create`, `/Edit/{id}`, `/Delete/{id}`
+
+> [!IMPORTANT]
+> Customer and Supplier both use the **`LedgerMaster`** database table. `LM_CusCode` identifies customers; `LM_SupCode` identifies suppliers.
+
+**Input Fields** (28 fields):
+
+| Field | Type | Required | Autocomplete | Purpose |
+|---|---|---|---|---|
+| `CustomerTypeId` | dropdown | — | `CustomerTypeMaster` | Category |
+| `LM_Ledger_Name` | text | ✅ | — | Customer/company name |
+| `LM_Code` | text | — | — | Customer code |
+| `LM_Address1–5` | text ×5 | — | — | Multi-line address |
+| `LM_Area` | text | — | AJAX: `GetCityName` | City |
+| `LM_State` | text | — | AJAX: `GetStateName` | State |
+| `LM_StateCode` | text | — | Auto-filled | GST state code |
+| `LM_Country` | text | — | AJAX: `GetCountryName` | Country |
+| `LM_PinCode` | text | — | — | Postal code |
+| `LM_Contact_Person` | text | — | — | Primary contact |
+| `LM_Phone_Number` | text | — | — | Phone |
+| `LM_Cell_No` | text | — | — | Mobile |
+| `LM_EmailID` | email | — | — | Email |
+| `LM_WebSite` | url | — | — | Website |
+| `LM_GSTIN` | text | — | — | GSTIN |
+| `LM_PAN_No` | text | — | — | PAN |
+| `LM_Aadhar_No` | text | — | — | Aadhaar |
+| `LM_Bank_Name` | text | — | AJAX: `GetBankName` | Bank |
+| `LM_Branch` | text | — | AJAX: `GetBranchName` | Branch |
+| `LM_Account_Name` | text | — | — | Account holder |
+| `LM_Account_Number` | text | — | — | Account number |
+| `LM_IFSC_Code` | text | — | AJAX: `GetIFSCCode` | IFSC |
+| `LM_MICRCODEBANK` | text | — | AJAX: `GetMICRCode` | MICR |
+| `LM_Cus_Remarks` | textarea | — | — | Remarks |
+
+**AJAX Endpoints**: `CheckCustomerName` (duplicate), `GetCityName`, `GetStateName`, `GetCountryName`, `GetBankName`, `GetBranchName`, `GetIFSCCode`, `GetMICRCode`
+
+**Backend**: `ICustomerMaster` → `CustomerMasterConcrete`
+
+---
+
+### 5.4 Supplier Master Page
+
+**Route**: `/SupplierMaster/Create`, `/Edit/{id}`, `/Delete/{id}`
+
+> **Structurally identical** to Customer Master. Differences:
+
+| Aspect | Customer | Supplier |
+|---|---|---|
+| Type Dropdown | `CustomerTypeMaster` | `SupplierTypeMaster` |
+| Code Field | `LM_CusCode` | `LM_SupCode` |
+| DB Key | Same `LedgerMaster` table | Same `LedgerMaster` table |
+
+---
+
+### 5.5 Contractor Master Page
+
+**Route**: `/ContractorMaster/Create`, `/Edit`, `/Delete`
+
+| Field | Type | Required | Purpose |
+|---|---|---|---|
+| `Contract_Code` | text | ✅ | Unique contractor code |
+| `Contract_Name` | text | ✅ | Contractor name |
+| `Address` | textarea | — | Address |
+| `Phone` | text | — | Phone |
+| `Email` | email | — | Email |
+| `Status` | select | — | Active/Inactive |
+
+**Backend**: `IContractorMaster` → `ContractorMasterConcrete`
+
+---
+
+### 5.6 Machine Master Page
+
+**Route**: `/MachineMaster/Create`, `/Edit`, `/Delete`
+
+| Field | Type | Required | Dropdown Source | Purpose |
+|---|---|---|---|---|
+| `MachinecategroyId` | dropdown | ✅ | `MachineCategroyMaster` | Machine category |
+| `SM_VendorId` | dropdown | ✅ | `VendorMaster` | Machine vendor |
+| `Machine_Code` | text | ✅ | — | Machine ID |
+| `Machine_Name` | text | ✅ | — | Machine name |
+| `Machine_Description` | text | — | — | Description |
+| `Location` | text | — | — | Factory location |
+| `Status` | select | — | — | Active/Inactive |
+
+**Backend**: `IMachineMaster` → `MachineMasterConcrete`
+
+---
+
+### 5.7 Process Master Page
+
+**Route**: `/ProcessMaster/Create`, `/Edit`, `/Delete`
+
+| Field | Type | Required | Dropdown Source | Purpose |
+|---|---|---|---|---|
+| `PM_Process_Name` | text | ✅ | — | Process name (Turning, Milling, etc.) |
+| `PM_Process_Name1` | text | — | — | Alternate process name |
+| `ProcessTypeId` | dropdown | — | `ProcessTypeMaster` | In-house/Outsource |
+| `TeamId` | dropdown | — | `TeamMaster` | Responsible team |
+| `PM_Process_Order` | number | — | — | Sequence order |
+| `PM_Days` | number | — | — | Estimated days |
+| `PM_Hours` | number | — | — | Estimated hours |
+| `Minutes` | number | — | — | Estimated minutes |
+| `Setting_Time` | number | — | — | Machine setup (default: 0) |
+| `Cycle_Time` | number | — | — | Per-piece cycle time |
+| `Handling_Time` | number | — | — | Material handling time |
+| `Idle_Time` | number | — | — | Machine idle time |
+| `Machine_id` | number | — | — | Linked machine ID |
+| `Machine_Name` | text | — | — | Machine name display |
+
+**Backend**: `IProcessMaster` → `ProcessMasterConcrete`
+
+---
+
+### 5.8 Vehicle Master Page
+
+**Route**: `/VehicleMaster/Create`, `/Delete/{id}`
+
+**Workflow**:
+```mermaid
+flowchart TD
+    A["Select Customer from dropdown"] --> B["AJAX: GetCustomerDetails(customerId)"]
+    B --> C["Auto-fill: Address, State, Contact info"]
+    C --> D["AJAX: GetVehicleCountDetails(customerId)"]
+    D --> E["Display vehicle count for customer"]
+    E --> F["Select Vehicle Model → AJAX: GetMaxSno(modelNo)"]
+    F --> G["Auto-generate Serial Number based on financial year"]
+    G --> H["Select Sub-type, Vehicle Name, BOM Type"]
+    H --> I["Submit → Capture audit info → Save"]
+```
+
+| Field | Type | Required | Source | Purpose |
+|---|---|---|---|---|
+| `Customer_Id` | dropdown | ✅ | `CustomerMaster` (AJAX auto-fill) | Customer link |
+| `Vehicle_Model_No_Id` | dropdown | ✅ | `VehicleModelNumberMaster` | Vehicle model |
+| `Model_Sub_Type_Id` | dropdown | ✅ | `VehicleSubTypeMaster` | Model variant |
+| `Vehicle_Name_Id` | dropdown | ✅ | `VehicleNameMaster` | Vehicle name |
+| `Serial_No` | text | auto | AJAX: `GetMaxSno()` | Auto serial via stored proc |
+| `Vehicle_No` | text | — | — | Registration plate |
+| `Customer_Vehicle_Count` | number | auto | AJAX: `GetVehicleCountDetails()` | Running count |
+| `BOM_Type` | select | ✅ | — | Bill of Materials type |
+| `Model_Row_Id` | dropdown | — | `VehicleIndexModelNumberMaster` | BOM model link |
+| `Remarks` | textarea | — | — | Notes |
+
+**Serial Number Logic**: `GetMaxSnoPartNumber(modelNo)` — Queries SQL view filtered by vehicle model and Indian financial year (Apr-Mar), returns MAX + 1.
+
+**Backend**: `IVehicleMaster`, `ICustomerMaster`
+
+---
+
+### 5.9 Vehicle Service Master Page
+
+**Route**: `/VehicleServiceMaster/Create`, `/Edit`, `/Details`
+
+| Field | Type | Required | Dropdown Source | Purpose |
+|---|---|---|---|---|
+| `VehicleTypeId` | dropdown | ✅ | `VehicleTypeMaster` | Vehicle type selection |
+| Service-specific fields | various | — | — | Service details, dates, etc. |
+
+**Backend**: `IVehicleServiceMaster`, `IVehicleTypeMaster`
+
+---
+
+### 5.10 Item Master Page ⭐ (Most Complex — 202KB controller)
+
+**Route**: `/ItemMaster/Create`, `/Edit/{id}`, `/Delete/{id}`  
+**Authorization**: `[AuthorizeSuperAdminandAdmin]`
+
+> [!IMPORTANT]
+> Item Master is the **largest page** in the system: 202KB controller, 12 dropdown lists, file uploads, stored procedure integration, and auto part-number generation.
+
+**Input Fields** (organized by section):
+
+#### Basic Item Info
+| Field | Type | Required | Dropdown Source | Purpose |
+|---|---|---|---|---|
+| `GroupId` | dropdown | ✅ | `ItemGroupMaster` | Item group |
+| `IM_Part_No` | text | ✅ | Auto (stored proc) | Unique part number |
+| `Outsource_Part_No` | text | — | — | External part number |
+| `IM_PartName` | text | ✅ | — | Part name |
+| `ModelId` | dropdown | ✅ | `ItemModelMaster` | Model |
+| `Brand` | text | — | — | Brand |
+| `IM_Description` | textarea | — | — | Description |
+| `IM_Size` | text | — | — | Dimensions |
+| `IM_WEIGHT` | decimal | ✅ | — | Weight |
+
+#### Classification (4 dropdowns)
+| Field | Dropdown Source | Purpose |
+|---|---|---|
+| `UnitId` | `ItemUnitMaster` | UOM (Nos, Kg, Mtr) |
+| `SubGroupId` | `ItemSubGroupMaster` | Sub-group |
+| `ItemTypeId` | `ItemTypeMaster` | Type (Raw/Finished) |
+| `QcTypeId` | `ItemQcTypeMaster` | QC type |
+
+#### Pricing & Tax
+| Field | Type | Purpose |
+|---|---|---|
+| `IM_HSN_Code` | text | HSN/SAC code |
+| `IM_Purchase_Rate` | decimal | Cost price |
+| `IM_Margin_per` | decimal | Margin % |
+| `IM_Rate` | decimal | Selling rate |
+| `CurrencyId` | dropdown (`ItemCurrencyMaster`) | Currency |
+| `TaxId` | dropdown (`ItemTaxGroupMaster`) | GST slab |
+
+#### Storage & Material (5 dropdowns + fields)
+| Field | Dropdown Source | Purpose |
+|---|---|---|
+| `StoreId` | `ItemStoreMaster` | Store location |
+| `MaterialGradeId` | `ItemMaterialGradeMaster` | Material grade |
+| `MaterialTypeId` | `ItemMaterialTypeMaster` | Material type |
+| `RawMaterialId` | `ItemRawMaterialMaster` | Raw material |
+| `Rack_No`, `Location`, `IM_ReorderLevel`, `IM_Min_Stock` | — | Storage details |
+| `RM_length`, `Raw_material_wt`, `FG_material_wt` | — | Material specs |
+
+#### Files
+| Field | Type | Purpose |
+|---|---|---|
+| `ImageFile` | file | Product image → `/Content/images/` |
+| `PdfFile` | file | Drawing PDF → `/Content/pdfs/` |
+| `RouteCardNumber` | text | Route card ref |
+
+**Part Number Auto-Generation**: `Z_GetMaximumPartNumberPlusOne1NEW1(@itemGroup)` stored proc
+
+**Backend**: `IItemMaster` → `ItemMasterConcrete` (largest repository at 83KB)
+
+---
+
+## 6. Sales Module (Quotation)
+
+### 6.1 Quotation Index
+
+**Route**: `GET /Quotation/Index`
+
+**Filter Fields**:
+
+| Field | Type | Purpose |
+|---|---|---|
+| `FromDate` | date | Start date (default: -7 days) |
+| `ToDate` | date | End date (default: today) |
+| `QueryPo` | text | Search by PO/Quotation number |
+| `QuotationConfirmedStatusId` | dropdown | Status filter |
+
+### 6.2 Quotation Create/Edit ⭐ (Second Most Complex)
+
+**Route**: `GET/POST /Quotation/Create`, `/Quotation/Edit/{id}`
+
+**Workflow**:
+```mermaid
+flowchart TD
+    A["Auto-generate Quotation No: FY/QXXXXX"] --> B["Select Customer → AJAX auto-fill address/GSTIN"]
+    B --> C["Set Tax Type, Currency, Exchange Rate"]
+    C --> D["Add line items via Item Master popup"]
+    D --> E["Per item: Qty × Price - Discount + GST"]
+    E --> F["SGST/CGST/IGST split based on Tax Type"]
+    F --> G["Calculate totals → Submit"]
+    G --> H["Save QuotationEntry + QuotationDetails"]
+```
+
+**Master Header Fields** (20 fields):
+
+| Field | Type | Required | Source | Purpose |
+|---|---|---|---|---|
+| `PO_No` | text | auto | `YY-YY/QXXXXX` | Quotation number |
+| `PODate` | date | ✅ | Default: today | Quotation date |
+| `Customer_ID` | dropdown | ✅ | Customer list | Customer |
+| `Contact_Person` | text | — | Auto-filled | Contact |
+| `Contact_No` | text | — | Auto-filled | Phone |
+| `LM_Address1–5` | text | auto | Auto-filled | Address |
+| `CustomerRefNo` | text | — | — | Customer ref |
+| `Revision_No` | number | — | — | Revision # |
+| `Delivery_Date` | date | ✅ | — | Delivery date |
+| `Validity_Until` | text | — | — | Validity period |
+| `GSTTIN` | text | auto | Auto-filled | Customer GSTIN |
+| `QuotationTypeId` | dropdown | ✅ | `QuotationTypeMaster` | Type |
+| `GradeId` | dropdown | ✅ | `QuotationGradeMaster` | Model/grade |
+| `TaxTypeId` | dropdown | ✅ | `QuotationTaxTypeMaster` | Local/Interstate |
+| `TaxId` | dropdown | ✅ | Tax % list | GST % |
+| `CurrencyTypeId` | dropdown | ✅ | `QuotationCurrencyTypeMaster` | Currency |
+| `Exchange_Rate` | decimal | — | — | Exchange rate |
+| `Payment_Terms` | textarea | — | `TermsCondition` table | Terms |
+| `PdfFile` | file | — | — | Attachment |
+
+**Line Item Fields** (per row):
+
+| Field | Type | Calc? | Purpose |
+|---|---|---|---|
+| `Item_ID` | lookup | — | Item from popup |
+| `Item_Code` | text | auto | Part number |
+| `Item_Name` | text | auto | Part name |
+| `HSN_Code` | text | auto | HSN code |
+| `UOM` | text | auto | Unit |
+| `Qty` | decimal | — | Quantity |
+| `Unit_Price` | decimal | — | Price per unit |
+| `Disc_Per` | decimal | — | Discount % |
+| `Desc_Amt` | decimal | ✅ | Discount amount |
+| `Final_Price` | decimal | ✅ | After discount |
+| `Sub_total` | decimal | ✅ | Qty × Final Price |
+| `GST_Per` | decimal | auto | GST % |
+| `SGST/CGST/IGST` | decimal | ✅ | Tax split |
+| `GST_Amt` | decimal | ✅ | Tax amount |
+| `Net_Amt` | decimal | ✅ | Total with tax |
+
+**Summary Calculations**:
+
+| Field | Formula |
+|---|---|
+| `Total_Before_Disc` | Σ line sub-totals |
+| `Sdiscount` | Flat discount |
+| `Freight_Amount` | Shipping |
+| `Packing_Forward` | Packing charges |
+| `Taxable_Amount` | Before tax total |
+| `IGST/SGST/CGST Amounts` | By tax type |
+| `Net_Amt` | Grand total |
+
+**AJAX Endpoints**:
+- `GET /Quotation/GetItemData?itemId=&gstType=` — Item details
+- `GET /Quotation/ListJson?search=&groupId=` — Item search
+- `GET /Quotation/Image/{id}` — Item image stream
+
+**Backend**: `IQuotationRepository`, Crystal Reports for PDF
+
+---
+
+## 7. Accounting Module
+
+### 7.1 Invoice Page
+
+**Route**: `/Invoice/Index`  
+**Database**: Uses separate `InvoiceDbContext`
+
+**Workflow**: Supplier → Invoices → Invoice Details → Stock (drill-down)
+
+**AJAX Endpoints**:
+- `GET /Invoice/GetInvoicesBySupplier?supplierId=` — Invoice list for supplier
+- `GET /Invoice/GetInvoiceDetails?invoiceId=` — Line item details
+- `GET /Invoice/GetStockByProduct?detailId=` — Current stock level
+
+**Purpose**: Track purchase invoices with supplier, item, quantity, and stock information.
+
+### 7.2 Journal Entries Page
+
+**Route**: `GET /JournalEntries/Index`
+
+**Purpose**: View accounting journal entries with:
+- Transaction Date
+- Voucher/Reference Number
+- Description (Particulars)
+- Account Name
+- Debit Amount
+- Credit Amount
+
+**Backend**: `IJournalEntries.GetAllJournalEntries()`
+
+### 7.3 Ledger Group Master
+
+**Route**: `/LedgerGroupMaster/*`
+
+**Purpose**: Define ledger account groups for chart of accounts organization.
+
+---
+
+## 8. Quality Control Module
+
+### 8.1 QC Check Method Master
+
+**Route**: `/QCCheckMethodMaster/Create`, Edit, Delete
+
+| Field | Type | Required | Purpose |
+|---|---|---|---|
+| `CM_vCode` | text | ✅ | Method code |
+| `CM_vName` | text | ✅ | Method name (Visual, Dimensional, etc.) |
+| `CM_vDescription` | textarea | — | Description |
+| `CM_cStatus` | select | auto | Set to "A" |
+
+**Backend**: `IQCCheckMethodMaster`
+
+### 8.2 QC Inspection Character Master
+
+**Route**: `/QCInspectionCharaterMaster/*`  
+**Purpose**: Define QC characteristics (Surface Finish, Hardness, Roundness, etc.)
+
+**Backend**: `IQCInspectionCharaterMaster` → Uses `QCInspectionCharaterMaster` model
+
+### 8.3 QC Material Inspection Standard Master
+
+**Route**: `/QCMaterialInspectionStandardMaster/*`  
+**Purpose**: Define material inspection standards and acceptance criteria
+
+---
+
+## 9. Configuration Module
+
+### 9.1 Reference Group Master (Dropdown Categories)
+
+**Route**: `/ReferenceGroupMaster/Create`, Edit, Delete, **UnDelete**  
+**Authorization**: `[AuthorizeSuperAdminandAdmin]`
+
+> [!TIP]
+> Reference Groups define **dropdown categories**. Each group (e.g., "Department", "Designation") contains multiple values managed via Reference Group Value Master.
+
+**Workflow**:
+```mermaid
+flowchart TD
+    A["Index: Active groups in DataTable"] --> B["Create: Enter group code"]
+    B --> C{"Unique? — AJAX: CheckReferenceGroup"}
+    C -->|Duplicate| D["Error"]
+    C -->|Unique| E["Save with audit trail"]
+    A --> F["UDIndex: View deleted groups"]
+    F --> G["UnDelete: Restore soft-deleted group"]
+```
+
+| Field | Type | Required | Purpose |
+|---|---|---|---|
+| `RG_vCode` | text | ✅ | Group code/name |
+| `RG_vDescription` | auto | — | Auto-set = RG_vCode |
+| `RG_vStatus` | auto | — | "A" on create |
+
+**Special**: Soft delete with **UnDelete** capability
+
+### 9.2 Reference Group Value Master (Dropdown Values)
+
+**Route**: `/ReferenceGroupValue/Create`, Edit, Delete  
+**Authorization**: `[AuthorizeSuperAdminandAdmin]`
+
+**Workflow**:
+```mermaid
+flowchart TD
+    A["Create: Select Reference Group from dropdown"] --> B["Enter Value Code + Description"]
+    B --> C{"Unique? — AJAX: CheckReferenceGroupValue"}
+    C -->|Duplicate| D["Error"]
+    C -->|Unique| E["Save: RGV_iRG_ID links to parent group"]
+    E --> F["TempData preserves SelectedRG_ID for next entry"]
+```
+
+| Field | Type | Required | Source | Purpose |
+|---|---|---|---|---|
+| `RG_iID` | dropdown | ✅ | `ReferenceGroupMaster` | Parent group |
+| `RGV_vCode` | text | ✅ | — | Value code |
+| `RGV_vDesciption` | text | ✅ | — | Value description (trimmed) |
+
+**AJAX Endpoints**:
+- `GET /ReferenceGroupValue/GetVCode?id=` — Fetch next code
+- `GET /ReferenceGroupValue/GetRecordsByReferenceGroup?id=` — Filter values by group
+- `GET /ReferenceGroupValue/CheckReferenceGroupValue?refgroupName=` — Duplicate check
+
+**Backend**: `IReferenceGroupValue`, `IReferenceGroupMaster`
+
+### 9.3 Ledger Master (Tax Ledger A/C)
+
+**Route**: `/LedgerMaster/Create`, Edit, Delete
+
+| Field | Type | Required | Purpose |
+|---|---|---|---|
+| `LM_Ledger_Name` | text | ✅ | Ledger name (trimmed) |
+| `LM_Code` | text | — | Ledger code |
+| `LedgerID` | number | auto | System-generated |
+
+**AJAX**: `CheckTaxLedgerAccount` — Duplicate check  
+**Backend**: `ILedgerMaster`
+
+### 9.4 Tax Master
+
+**Route**: `/TaxMaster/Create`, Delete  
+**Authorization**: `[AuthorizeSuperAdminandAdmin]`
+
+| Field | Type | Required | Source | Purpose |
+|---|---|---|---|---|
+| `LedgerID` | dropdown | ✅ | `TaxLedgerNameMaster` | Linked ledger |
+| `TM_Tax_Percent` | decimal | ✅ | — | Total GST % (e.g., 18) |
+| `TM_CGST_Tax` | decimal | — | — | CGST % (e.g., 9) |
+| `TM_SGST_Tax` | decimal | — | — | SGST % (e.g., 9) |
+| `TM_IGST_Tax` | decimal | — | — | IGST % (e.g., 18) |
+| `TM_PCGST` | decimal | — | — | Purchase CGST |
+| `TM_PSGST` | decimal | — | — | Purchase SGST |
+| `TM_PIGST` | decimal | — | — | Purchase IGST |
+| `TM_SCGST` | decimal | — | — | Sales CGST |
+| `TM_SSGST` | decimal | — | — | Sales SGST |
+| `TM_SIGST` | decimal | — | — | Sales IGST |
+
+**AJAX**: `CheckTaxPercent` — Prevents duplicate slabs  
+**Backend**: `ITaxMaster`, `ITaxLedgerNameMasterConcrete`
+
+---
+
+## 10. Inventory & Part Number Module
+
+### 10.1 Item Group Master
+
+**Route**: `/ItemGroupMaster/Create`, Edit, Delete, **UnDelete**  
+**Authorization**: `[AuthorizeSuperAdminandAdmin]`
+
+> [!IMPORTANT]
+> This page manages item groups — the top-level classification for all items. Each group links to a **Store** and a **Part Number Prefix** that controls auto-generation of part numbers. The controller is 644 lines and uses concurrency handling (`DbUpdateConcurrencyException`) on edit.
+
+| Field | Type | Required | Source | Purpose |
+|---|---|---|---|---|
+| `IM_PartName` | text | ✅ | — | Group/part name |
+| `StoreId` | dropdown | ✅ | `ItemStoreMaster` | Default store |
+| `PrefixId` | dropdown | ✅ | `ItemGroupMasterFormatedPrefix` | Part number prefix |
+
+**Special Features**:
+- **Soft Delete + UnDelete**: `DeleteItemMaster1()` / `UnDeleteItemMaster()`
+- **Concurrency Control**: Handles `DbUpdateConcurrencyException` with retry loop
+- **Duplicate Check**: `CheckItemGroup` AJAX endpoint
+- **Deleted Items View**: `UDIndex` page + `LoadallItemGroupMasterDeleted`
+
+**Backend**: `IItemGroupMaster`, `IItemMaster`, `IPartNumberBaseMasterConcrete`
+
+### 10.2 Part Number Base Master
+
+**Route**: `/PartNumberBaseMaster/Create`, Edit, Details
+
+**Purpose**: Define part number structures with 3 cascading dropdowns.
+
+| Field | Type | Required | Source | Purpose |
+|---|---|---|---|---|
+| `CategoryId` | dropdown | ✅ | `PartNumberCategoryMaster` | Category |
+| `SubCategoryId` | dropdown | ✅ | `PartNumberBaseSubCategoryMaster` | Sub-category |
+| `PrefixId` | dropdown | ✅ | `PartNumberBasePrefixMaster` | Prefix |
+
+**Backend**: `IPartNumberBaseMasterConcrete`, `IPartNumberCatagoryMaster`, `IPartNumberSubCatagoryMaster`, `IPartNumberPrefixMaster`
+
+### 10.3 Part Usage List Display
+
+**Route**: `/PartUsageListDisplay/Index`
+
+**Purpose**: Read-only display showing where each part is used across assemblies/vehicles. DataTable with server-side processing.
+
+**Backend**: `IPartUsageListDisplay`
+
+### 10.4 Auto PO (Automatic Purchase Orders)
+
+**Route**: `/AutoPO/Index`
+
+**Purpose**: Read-only DataTable showing items below reorder level that need automatic PO generation. No Create/Edit — view only.
+
+**Backend**: `IAutoPO.GetAllAutoPODisplay()`, `ShowAllAutoPODisplay()`
+
+---
+
+## 11. System Administration Module
+
+### 11.1 System Info Master
+
+**Route**: `/SystemInfoMaster/*`
+
+**Purpose**: Register workstations with IP, MAC, device name, username, department. This data is used by the **audit trail pattern** across all CRUD operations.
+
+| Field | Type | Purpose |
+|---|---|---|
+| `IPAddress` | text | System IP |
+| `MACAddress` | text | Network MAC |
+| `DeviceName` | text | Computer name |
+| `USERNAME` | text | Windows login |
+| `DEPT` | text | Department |
+
+### 11.2 File Copy & Backup
+
+| Controller | Route | Purpose |
+|---|---|---|
+| `FileCopyController` | `/FileCopy/*` | Database backup operations |
+| `FileCopyBackgroundController` | `/FileCopyBackground/*` | Background/async backup |
+| `RestoreController` | `/Restore/*` | Database restore from backup |
+
+### 11.3 Utility Controllers
+
+| Controller | Route | Purpose |
+|---|---|---|
+| `HomeController` | `/Home/Index` | Landing page |
+| `DemoPageController` | `/DemoPage/*` | Development testing |
+| `ErrorController` | `/Error/*` | Error display |
+| `ReferenceMasterController` | `/ReferenceMaster/*` | Combined reference view |
+| `ItemMasterCommonController` | `/ItemMasterCommon/*` | Shared item operations |
+| `ItemMasterCommonNewController` | `/ItemMasterCommonNew/*` | Updated shared operations |
+| `QuotationNewController` | `/QuotationNew/*` | New quotation variant |
+
+---
+
+## 12. Complete Controller Inventory
+
+| # | Controller | Size | Auth | CRUD | Paging | Soft Delete |
+|---|---|---|---|---|---|---|
+| 1 | LoginController | 6KB | — | — | — | — |
+| 2 | RegistrationController | 3KB | Anonymous | C | — | — |
+| 3 | CreateUsersController | 4KB | Admin | C | — | — |
+| 4 | AllUsersController | 8KB | Admin | RD | jTable | — |
+| 5 | RoleMasterController | 6KB | Admin | CRUD | DataTable | — |
+| 6 | MenuMastersController | 6KB | Admin | CRUD | DataTable | — |
+| 7 | SubMenuMasterController | 8KB | Admin | CRUD | DataTable | — |
+| 8 | AssignRolestoMenuController | 4KB | Admin | CR | — | — |
+| 9 | AssignRolestoSubMenuController | 6KB | Admin | CR | — | — |
+| 10 | AssignRoletoUserController | 3KB | Admin | CR | — | — |
+| 11 | EditAssignedRolesController | 5KB | Admin | RU | — | — |
+| 12 | AllAssignedRoleMenuController | 6KB | Admin | R | jTable | — |
+| 13 | AllAssignedRoleSubMenuController | 7KB | Admin | R | jTable | — |
+| 14 | AllRolesController | 1KB | — | R | — | — |
+| 15 | SuperDashboardController | 1KB | Admin | R | — | — |
+| 16 | AdminDashboardController | 1KB | Admin | R | — | — |
+| 17 | UserDashboardController | 1KB | — | R | — | — |
+| 18 | DashboardController | 1KB | — | R | — | — |
+| 19 | CompanyMasterController | 12KB | — | CRUD | DataTable | — |
+| 20 | EmployeeMasterController | 7KB | — | CRUD | DataTable | — |
+| 21 | CustomerMasterController | 20KB | — | CRUD | DataTable | — |
+| 22 | SupplierMasterController | 21KB | — | CRUD | DataTable | — |
+| 23 | ContractorMasterController | 7KB | — | CRUD | DataTable | — |
+| 24 | MachineMasterController | 6KB | — | CRUD | DataTable | — |
+| 25 | ProcessMasterController | 6KB | — | CRUD | DataTable | — |
+| 26 | VehicleMasterController | 15KB | — | CRD | DataTable | ✅ |
+| 27 | VehicleServiceMasterController | 5KB | — | CRU | DataTable | — |
+| 28 | **ItemMasterController** | **202KB** | Admin | CRUD | DataTable | ✅ |
+| 29 | ItemGroupMasterController | 22KB | Admin | CRUD | DataTable | ✅ |
+| 30 | ItemMasterCommonController | 8KB | — | R | — | — |
+| 31 | ItemMasterCommonNewController | 4KB | — | R | — | — |
+| 32 | QuotationController | 41KB | — | CRUD | DataTable | — |
+| 33 | QuotationNewController | 3KB | — | R | — | — |
+| 34 | InvoiceController | 2KB | — | R | Custom | — |
+| 35 | JournalEntriesController | 1KB | — | R | — | — |
+| 36 | LedgerMasterController | 14KB | — | CRUD | DataTable | — |
+| 37 | LedgerGroupMasterController | 2KB | — | R | — | — |
+| 38 | TaxMasterController | 10KB | Admin | CRD | DataTable | — |
+| 39 | ReferenceGroupMasterController | 16KB | Admin | CRUD | DataTable | ✅ |
+| 40 | ReferenceGroupValueController | 19KB | Admin | CRUD | DataTable | — |
+| 41 | ReferenceMasterController | 2KB | — | R | — | — |
+| 42 | QCCheckMethodMasterController | 8KB | — | CR | DataTable | — |
+| 43 | QCInspectionCharaterMasterController | 9KB | — | CR | DataTable | — |
+| 44 | QCMaterialInspectionStandardMasterController | 8KB | — | CR | DataTable | — |
+| 45 | PartNumberBaseMasterController | 7KB | — | CR | DataTable | — |
+| 46 | PartUsageListDisplayController | 2KB | — | R | DataTable | — |
+| 47 | AutoPOController | 2KB | — | R | DataTable | — |
+| 48 | SystemInfoMasterController | 5KB | — | R | — | — |
+| 49 | FileCopyController | 4KB | — | — | — | — |
+| 50 | FileCopyBackgroundController | 4KB | — | — | — | — |
+| 51 | RestoreController | 10KB | — | — | — | — |
+| 52 | HomeController | 1KB | — | — | — | — |
+| 53 | DemoPageController | 0.3KB | — | — | — | — |
+| 54 | ErrorController | 0.3KB | — | — | — | — |
+
+---
+
+## 13. Migration Technology Recommendations
+
+### 13.1 Recommended New Stack
+
+| Layer | Current | Recommended | Rationale |
+|---|---|---|---|
+| **Frontend** | jQuery + Razor | React 19 + Vite 7 | SPA, component reuse |
+| **CSS** | Bootstrap (implied) | TailwindCSS v4 | Utility-first design system |
+| **State** | Server-side Session | React Context + useReducer | Client-side state |
+| **Backend API** | ASP.NET MVC Controllers | ASP.NET Core 8 Web API | REST, JSON |
+| **ORM** | Entity Framework 6 | EF Core 8 | Modern, migrations |
+| **Database** | SQL Server 2022 | SQL Server 2022 (keep) | Proven |
+| **Auth** | Session + AES | JWT + bcrypt | Stateless |
+| **Files** | Local filesystem | Azure Blob / local | Scalable |
+| **Reports** | Crystal Reports | React-PDF / Puppeteer | Modern PDF |
+
+### 13.2 API Route Mapping
+
+| Current MVC Route | New REST API | Method |
+|---|---|---|
+| `Login/Login` | `POST /api/auth/login` | POST |
+| `Login/Logout` | `POST /api/auth/logout` | POST |
+| `Registration/Register` | `POST /api/auth/register` | POST |
+| `Registration/CheckUsername` | `GET /api/auth/check-username?q=` | GET |
+| `CreateUsers/Create` | `POST /api/users` | POST |
+| `AllUsers/UserList` | `GET /api/users?page=&size=&sort=` | GET |
+| `AllUsers/RemoveUser` | `DELETE /api/users/{id}` | DELETE |
+| `CompanyMaster/LoadAll` | `GET /api/companies?page=&size=&sort=` | GET |
+| `CompanyMaster/Create` | `POST /api/companies` | POST |
+| `CompanyMaster/Edit/{id}` | `PUT /api/companies/{id}` | PUT |
+| `CompanyMaster/Delete/{id}` | `DELETE /api/companies/{id}` | DELETE |
+| `CompanyMaster/Details/{id}` | `GET /api/companies/{id}` | GET |
+| `CompanyMaster/GetCCode` | `GET /api/companies/next-code` | GET |
+| `CustomerMaster/CheckCustomerName` | `GET /api/customers/check?name=` | GET |
+| `CustomerMaster/GetCityName` | `GET /api/lookup/cities?q=` | GET |
+| `CustomerMaster/GetStateName` | `GET /api/lookup/states?q=` | GET |
+| `CustomerMaster/GetBankName` | `GET /api/lookup/banks?q=` | GET |
+| `ItemMaster/Create` | `POST /api/items` (multipart) | POST |
+| `ItemMaster/GeneratePartNo` | `GET /api/items/next-part-no?group=` | GET |
+| `ItemGroupMaster/UnDelete` | `PATCH /api/item-groups/{id}/restore` | PATCH |
+| `Quotation/Create` | `POST /api/quotations` | POST |
+| `Quotation/GetItemData` | `GET /api/items/{id}/quotation-data` | GET |
+| `Quotation/ListJson` | `GET /api/items?search=&take=500` | GET |
+| `ReferenceGroupValue/GetRecordsByReferenceGroup` | `GET /api/ref-groups/{id}/values` | GET |
+| `VehicleMaster/GetCustomerDetails` | `GET /api/customers/{id}/details` | GET |
+| `VehicleMaster/GetMaxSno` | `GET /api/vehicles/next-serial?model=` | GET |
+| `Invoice/GetInvoicesBySupplier` | `GET /api/suppliers/{id}/invoices` | GET |
+
+### 13.3 Database Entity Relationships
+
+```mermaid
+erDiagram
+    UserMaster ||--|| PasswordMaster : "has"
+    UserMaster ||--o| SavedAssignedRoles : "assigned"
+    RoleMaster ||--o{ SavedAssignedRoles : "defines"
+    RoleMaster ||--o{ SavedMenuRoles : "controls"
+    MenuMaster ||--o{ SubMenuMaster : "contains"
+    MenuMaster ||--o{ SavedMenuRoles : "access"
+    SubMenuMaster ||--o{ SavedSubMenuRoles : "access"
+    
+    CompanyMasterNew ||--o{ EmployeeMaster : "employs"
+    LedgerMaster ||--o{ VehicleMaster : "owns"
+    LedgerMaster }|--|| CustomerTypeMaster : "typed"
+    LedgerMaster }|--|| SupplierTypeMaster : "typed"
+    
+    ItemGroupMaster ||--o{ ItemMaster : "groups"
+    ItemMaster }|--|| ItemUnitMaster : "measured"
+    ItemMaster }|--|| ItemTypeMaster : "typed"
+    ItemMaster }|--|| ItemSubGroupMaster : "sub-grouped"
+    ItemMaster }|--|| ItemStoreMaster : "stored"
+    ItemMaster }|--|| ItemTaxGroupMaster : "taxed"
+    ItemMaster ||--o{ ItemMasterImagePdfDetail : "files"
+    
+    QuotationEntry ||--o{ QuotationDetail : "contains"
+    QuotationEntry }|--|| LedgerMaster : "customer"
+    QuotationDetail }|--|| ItemMaster : "item"
+    
+    ProcessMaster }|--|| ProcessTypeMaster : "typed"
+    ProcessMaster }|--|| TeamMaster : "team"
+    MachineMaster }|--|| MachineCategroyMaster : "categorized"
+    MachineMaster }|--|| VendorMaster : "vendor"
+    
+    VehicleMaster }|--|| VehicleModelNumberMaster : "model"
+    VehicleMaster }|--|| VehicleSubTypeMaster : "sub-type"
+    VehicleMaster }|--|| VehicleNameMaster : "named"
+    
+    Tax_Master }|--|| TaxLedgerNameMaster : "ledger"
+    ReferenceGroupMaster ||--o{ ReferenceGroupValue : "values"
+    
+    PartNumberBaseMaster }|--|| PartNumberCategoryMaster : "category"
+    PartNumberBaseMaster }|--|| PartNumberBaseSubCategoryMaster : "sub-category"
+    PartNumberBaseMaster }|--|| PartNumberBasePrefixMaster : "prefix"
+```
+
+### 13.4 Common Patterns for Migration
+
+#### A. Server-Side DataTable Pattern (Used in 30+ controllers)
+```
+1. Extract: draw, start, length, sortColumn, sortDir, searchValue
+2. Call: repository.ShowAll{Entity}(sort, dir, search)
+3. Apply: .Skip(start).Take(length)
+4. Return: { draw, recordsFiltered, recordsTotal, data }
+```
+**→ Replace with**: `GET /api/{entity}?page=1&size=10&sort=name&dir=asc&search=term`
+
+#### B. Audit Trail Pattern (Used in all CUD operations)
+```
+IP → Request.UserHostAddress
+MAC → SystemInfo table lookup by IP
+DeviceName → SystemInfo table lookup by IP  
+Username → SystemInfo table lookup by IP
+```
+**→ Replace with**: JWT claims (userId, role) + Request middleware (IP, user-agent)
+
+#### C. Dropdown Validation Pattern (Custom `ValidationAttribute`)
+```csharp
+if (Convert.ToString(value) == "-1") 
+    return new ValidationResult("Choose XYZ");
+```
+**→ Replace with**: `zod.number().min(1, "Choose XYZ")`
+
+#### D. Soft Delete + UnDelete Pattern (Used on 4 entities)
+```
+Delete: Status = "D" + capture D-audit fields (DIPAddress, DMACAddress, etc.)
+UnDelete: Status = "A" + clear D-audit fields
+```
+**→ Replace with**: `DELETE /api/{entity}/{id}` (soft) + `PATCH /api/{entity}/{id}/restore`
+
+#### E. Duplicate Check Pattern (Used on 8+ entities)
+```
+AJAX GET: Check{Entity}(name) → returns bool
+```
+**→ Replace with**: `GET /api/{entity}/check?name=` → `{ exists: true/false }`
+
+---
+
+> **This blueprint documents all 58 controllers and 54+ pages in the ManageRoles ERP system.** Every page follows MVC patterns with Controller → ViewModel → AutoMapper → Repository → EF6 → SQL Server, using consistent audit trailing, server-side DataTables, dropdown cascading, and soft-delete patterns throughout.
