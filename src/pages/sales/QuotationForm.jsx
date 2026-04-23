@@ -4,27 +4,36 @@ import PageHeader from '../../components/PageHeader';
 import FormField, { FormContainer, FormActions } from '../../components/FormField';
 import { FileText, Plus, Trash2 } from 'lucide-react';
 import { generateQuotationNumber } from '../../utils/mockData';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const emptyLine = { Item_ID: '', Item_Code: '', Item_Name: '', HSN_Code: '', UOM: '', Qty: 0, Unit_Price: 0, Disc_Per: 0, Desc_Amt: 0, Final_Price: 0, Sub_total: 0, GST_Per: 0, SGST_Per: 0, CGST_Per: 0, IGST_Per: 0, GST_Amt: 0, Net_Amt: 0 };
 
 const QuotationForm = () => {
   const { state, dispatch } = useApp();
   const navigate = useNavigate();
-  const [header, setHeader] = useState({
-    PO_No: generateQuotationNumber(state.quotations),
-    PODate: new Date().toISOString().split('T')[0],
-    Customer_ID: '', Contact_Person: '', Contact_No: '', LM_Address1: '', GSTTIN: '',
-    CustomerRefNo: '', Revision_No: '', Delivery_Date: '', Validity_Until: '',
-    QuotationTypeId: '', TaxTypeId: '', TaxId: '', CurrencyTypeId: '', Exchange_Rate: 1,
-    Sdiscount: 0, Freight_Amount: 0, Packing_Forward: 0, Payment_Terms: '',
+  const location = useLocation();
+  const editData = location.state?.editData;
+
+  const [header, setHeader] = useState(() => {
+    if (editData) return { ...editData };
+    return {
+      PO_No: generateQuotationNumber(state.quotations),
+      PODate: new Date().toISOString().split('T')[0],
+      Customer_ID: '', Contact_Person: '', Contact_No: '', LM_Address1: '', GSTTIN: '',
+      CustomerRefNo: '', Revision_No: '', Delivery_Date: '', Validity_Until: '',
+      QuotationTypeId: '', TaxTypeId: '', TaxId: '', CurrencyTypeId: '', Exchange_Rate: 1,
+      Sdiscount: 0, Freight_Amount: 0, Packing_Forward: 0, Payment_Terms: '',
+    };
   });
-  const [lines, setLines] = useState([{ ...emptyLine }]);
+  const [lines, setLines] = useState(() => {
+    if (editData?.lineItems?.length) return [...editData.lineItems];
+    return [{ ...emptyLine }];
+  });
   const setH = (k, v) => setHeader({ ...header, [k]: v });
 
   // Customer cascade fill
   const handleCustomerChange = (customerId) => {
-    const customer = state.customers.find((c) => c.id === parseInt(customerId));
+    const customer = state.customers.find((c) => String(c.id) === String(customerId));
     setHeader({
       ...header,
       Customer_ID: customerId,
@@ -37,7 +46,7 @@ const QuotationForm = () => {
 
   // Item select → auto-fill line
   const handleItemSelect = (idx, itemId) => {
-    const item = state.items.find((i) => i.id === parseInt(itemId));
+    const item = state.items.find((i) => String(i.id) === String(itemId));
     if (!item) return;
     const taxType = header.TaxTypeId; // Local vs Interstate
     const isLocal = taxType === '231' || taxType === 'Local';
@@ -94,17 +103,23 @@ const QuotationForm = () => {
     return { totalBeforeDisc, discount, freight, packing, taxableAmount, totalGst, grandTotal, roundOff, netAmt };
   }, [lines, header.Sdiscount, header.Freight_Amount, header.Packing_Forward]);
 
-  const handleSave = () => {
-    const customer = state.customers.find((c) => c.id === parseInt(header.Customer_ID));
-    dispatch({ type: 'ADD', entity: 'quotations', payload: {
-      ...header, CustomerName: customer?.LM_Ledger_Name || '', Net_Amt: totals.netAmt, Status: 'Open', lineItems: lines,
-    }});
+  const handleSave = async () => {
+    const customer = state.customers.find((c) => String(c.id) === String(header.Customer_ID));
+    const payload = {
+      ...header, TaxType: header.TaxTypeId, CustomerName: customer?.LM_Ledger_Name || '', Net_Amt: totals.netAmt, Status: editData ? editData.Status : 'Open', lineItems: lines,
+    };
+    
+    if (editData) {
+      await dispatch({ type: 'UPDATE', entity: 'quotations', payload: { ...payload, id: editData.id } });
+    } else {
+      await dispatch({ type: 'ADD', entity: 'quotations', payload });
+    }
     navigate('/sales/quotations');
   };
 
   return (
     <div className="animate-fade-in">
-      <PageHeader icon={FileText} title="Create Quotation" description="Auto-generated PO number, customer cascade, line item calculations" />
+      <PageHeader icon={FileText} title={editData ? "Edit Quotation" : "Create Quotation"} description="Auto-generated PO number, customer cascade, line item calculations" />
 
       <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-6">
         <h3 className="text-sm font-bold text-slate-700 mb-4">Quotation Header</h3>

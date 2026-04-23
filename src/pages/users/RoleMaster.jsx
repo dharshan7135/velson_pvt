@@ -9,7 +9,7 @@ import ConfirmDialog from '../../components/ConfirmDialog';
 import { Shield } from 'lucide-react';
 
 const RoleMaster = () => {
-  const { state, dispatch } = useApp();
+  const { state, dispatch, reload } = useApp();
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -30,7 +30,7 @@ const RoleMaster = () => {
   return (
     <div>
       <PageHeader icon={Shield} title="Role Master" description="CRUD roles for access control" />
-      <ActionBar onAdd={() => { setEditing(null); setForm({ RoleName: '', Status: 'Active' }); setModalOpen(true); }} addLabel="Add Role" onRefresh={() => {}} />
+      <ActionBar onAdd={() => { setEditing(null); setForm({ RoleName: '', Status: 'Active' }); setModalOpen(true); }} addLabel="Add Role" onRefresh={reload} />
       <div className="mt-4"><DataTable columns={columns} data={state.roles} onEdit={(r) => { setEditing(r); setForm(r); setModalOpen(true); }} onDelete={(r) => { setDeleteTarget(r); setDeleteOpen(true); }} /></div>
       <FormModal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Role' : 'Create Role'} width="max-w-md">
         <FormContainer columns={1}>

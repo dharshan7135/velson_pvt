@@ -10,7 +10,7 @@ import { Car } from 'lucide-react';
 import { exportToExcel } from '../../utils/exportExcel';
 
 const VehicleMaster = () => {
-  const { state, dispatch } = useApp();
+  const { state, dispatch, reload } = useApp();
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -21,7 +21,7 @@ const VehicleMaster = () => {
 
   // Customer cascade
   const handleCustomerChange = (custId) => {
-    const customer = state.customers.find((c) => c.id === parseInt(custId));
+    const customer = state.customers.find((c) => String(c.id) === String(custId));
     setForm({
       ...form, Customer_Id: custId, CustomerName: customer?.LM_Ledger_Name || '',
       Contact_Person: customer?.LM_Contact_Person || '', LM_Address1: customer?.LM_Address1 || '',
@@ -50,7 +50,7 @@ const VehicleMaster = () => {
   return (
     <div>
       <PageHeader icon={Car} title="Vehicle Master" description="Customer → AJAX cascade, auto-fill address/GST/contact" />
-      <ActionBar onAdd={openCreate} addLabel="Add Vehicle" onExport={() => exportToExcel(state.vehicles, columns, 'vehicles')} onRefresh={() => {}} />
+      <ActionBar onAdd={openCreate} addLabel="Add Vehicle" onExport={() => exportToExcel(state.vehicles, columns, 'vehicles')} onRefresh={reload} />
       <div className="mt-4"><DataTable columns={columns} data={state.vehicles} onEdit={openEdit} onDelete={(r) => { setDeleteTarget(r); setDeleteOpen(true); }} /></div>
       <FormModal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Vehicle' : 'Create Vehicle'} width="max-w-3xl">
         <FormContainer columns={2}>

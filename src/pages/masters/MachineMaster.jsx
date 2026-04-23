@@ -11,7 +11,7 @@ import { exportToExcel } from '../../utils/exportExcel';
 import { getRefValuesByGroup } from '../../utils/mockData';
 
 const MachineMaster = () => {
-  const { state, dispatch } = useApp();
+  const { state, dispatch, reload } = useApp();
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -36,8 +36,8 @@ const MachineMaster = () => {
   const openEdit = (row) => { setEditing(row); setForm(row); setModalOpen(true); };
 
   const handleSave = () => {
-    const cat = categories.find((c) => c.id === parseInt(form.MachineCategoryId));
-    const ven = vendors.find((v) => v.id === parseInt(form.VendorId));
+    const cat = categories.find((c) => String(c.id) === String(form.MachineCategoryId));
+    const ven = vendors.find((v) => String(v.id) === String(form.VendorId));
     const payload = { ...form, MachineCategoryName: cat?.RGV_vDescription || '', VendorName: ven?.RGV_vDescription || '' };
     if (editing) dispatch({ type: 'UPDATE', entity: 'machines', payload: { ...payload, id: editing.id } });
     else dispatch({ type: 'ADD', entity: 'machines', payload });
@@ -47,7 +47,7 @@ const MachineMaster = () => {
   return (
     <div>
       <PageHeader icon={Cog} title="Machine Master" description="Manage machines — linked to Process Master" />
-      <ActionBar onAdd={openCreate} addLabel="Add Machine" onExport={() => exportToExcel(state.machines, columns, 'machines')} onRefresh={() => {}} />
+      <ActionBar onAdd={openCreate} addLabel="Add Machine" onExport={() => exportToExcel(state.machines, columns, 'machines')} onRefresh={reload} />
       <div className="mt-4"><DataTable columns={columns} data={state.machines} onEdit={openEdit} onDelete={(r) => { setDeleteTarget(r); setDeleteOpen(true); }} /></div>
       <FormModal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Machine' : 'Create Machine'}>
         <FormContainer columns={2}>

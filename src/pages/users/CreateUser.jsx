@@ -9,10 +9,11 @@ import ConfirmDialog from '../../components/ConfirmDialog';
 import { Users } from 'lucide-react';
 
 const CreateUser = () => {
-  const { state, dispatch } = useApp();
+  const { state, dispatch, reload } = useApp();
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [editing, setEditing] = useState(null);
   const empty = { UserName: '', FirstName: '', LastName: '', EmailId: '', Gender: '', MobileNo: '', Password: '', RoleId: '', RoleName: '', Status: 'Active' };
   const [form, setForm] = useState(empty);
   const set = (k, v) => setForm({ ...form, [k]: v });
@@ -26,18 +27,22 @@ const CreateUser = () => {
     { key: 'Status', label: 'Status', render: (v) => <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${v === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{v}</span> },
   ];
 
+  const openEdit = (row) => { setEditing(row); setForm(row); setModalOpen(true); };
+
   const handleSave = () => {
-    const role = state.roles.find((r) => r.id === parseInt(form.RoleId));
-    dispatch({ type: 'ADD', entity: 'users', payload: { ...form, RoleName: role?.RoleName || '' } });
+    const role = state.roles.find((r) => String(r.id) === String(form.RoleId));
+    const payload = { ...form, RoleName: role?.RoleName || '' };
+    if (editing) dispatch({ type: 'UPDATE', entity: 'users', payload: { ...payload, id: editing.id } });
+    else dispatch({ type: 'ADD', entity: 'users', payload });
     setModalOpen(false);
   };
 
   return (
     <div>
       <PageHeader icon={Users} title="User Management" description="Create users and assign roles" />
-      <ActionBar onAdd={() => { setForm(empty); setModalOpen(true); }} addLabel="Create User" onRefresh={() => {}} />
-      <div className="mt-4"><DataTable columns={columns} data={state.users} onDelete={(r) => { setDeleteTarget(r); setDeleteOpen(true); }} /></div>
-      <FormModal open={modalOpen} onClose={() => setModalOpen(false)} title="Create User">
+      <ActionBar onAdd={() => { setEditing(null); setForm(empty); setModalOpen(true); }} addLabel="Create User" onRefresh={reload} />
+      <div className="mt-4"><DataTable columns={columns} data={state.users} onEdit={openEdit} onDelete={(r) => { setDeleteTarget(r); setDeleteOpen(true); }} /></div>
+      <FormModal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? "Edit User" : "Create User"}>
         <FormContainer columns={2}>
           <FormField label="Username" required><input className="form-input" value={form.UserName} onChange={(e) => set('UserName', e.target.value)} /></FormField>
           <FormField label="Role" required>

@@ -10,7 +10,7 @@ import { Receipt } from 'lucide-react';
 import { exportToExcel } from '../../utils/exportExcel';
 
 const TaxMaster = () => {
-  const { state, dispatch } = useApp();
+  const { state, dispatch, reload } = useApp();
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -32,7 +32,7 @@ const TaxMaster = () => {
   const openEdit = (row) => { setEditing(row); setForm(row); setModalOpen(true); };
 
   const handleSave = () => {
-    const ledger = state.ledgerMasters.find((l) => l.id === parseInt(form.LedgerID));
+    const ledger = state.ledgerMasters.find((l) => String(l.id) === String(form.LedgerID));
     const payload = { ...form, LedgerName: ledger?.LM_Ledger_Name || '' };
     if (editing) dispatch({ type: 'UPDATE', entity: 'taxMasters', payload: { ...payload, id: editing.id } });
     else dispatch({ type: 'ADD', entity: 'taxMasters', payload });
@@ -42,7 +42,7 @@ const TaxMaster = () => {
   return (
     <div>
       <PageHeader icon={Receipt} title="Tax Master" description="Configure GST tax slabs — feeds Item Master and Quotation" />
-      <ActionBar onAdd={openCreate} addLabel="Add Tax Slab" onExport={() => exportToExcel(state.taxMasters, columns, 'tax_master')} onRefresh={() => {}} />
+      <ActionBar onAdd={openCreate} addLabel="Add Tax Slab" onExport={() => exportToExcel(state.taxMasters, columns, 'tax_master')} onRefresh={reload} />
       <div className="mt-4">
         <DataTable columns={columns} data={state.taxMasters} onEdit={openEdit} onDelete={(r) => { setDeleteTarget(r); setDeleteOpen(true); }} />
       </div>

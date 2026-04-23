@@ -8,7 +8,7 @@ import FormField, { FormContainer, FormActions } from '../../components/FormFiel
 import { Activity } from 'lucide-react';
 
 const QCCheckMethod = () => {
-  const { state, dispatch } = useApp();
+  const { state, dispatch, reload } = useApp();
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState({ CM_vCode: '', CM_vName: '', CM_vDescription: '', CM_cStatus: 'A' });
   const set = (k, v) => setForm({ ...form, [k]: v });
@@ -29,7 +29,7 @@ const QCCheckMethod = () => {
   return (
     <div>
       <PageHeader icon={Activity} title="QC Check Method Master" description="Define quality check methods" />
-      <ActionBar onAdd={() => setModalOpen(true)} addLabel="Add Check Method" onRefresh={() => {}} />
+      <ActionBar onAdd={() => setModalOpen(true)} addLabel="Add Check Method" onRefresh={reload} />
       <div className="mt-4"><DataTable columns={columns} data={state.qcCheckMethods} /></div>
       <FormModal open={modalOpen} onClose={() => setModalOpen(false)} title="Create Check Method" width="max-w-md">
         <FormContainer columns={1}>

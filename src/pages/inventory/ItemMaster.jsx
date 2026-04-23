@@ -11,7 +11,7 @@ import { exportToExcel } from '../../utils/exportExcel';
 import { getRefValuesByGroup } from '../../utils/mockData';
 
 const ItemMaster = () => {
-  const { state, dispatch } = useApp();
+  const { state, dispatch, reload } = useApp();
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -49,9 +49,9 @@ const ItemMaster = () => {
   const openEdit = (row) => { setEditing(row); setForm({ ...empty, ...row }); setModalOpen(true); };
 
   const handleSave = () => {
-    const group = state.itemGroups.find((g) => g.id === parseInt(form.GroupId));
-    const unit = uoms.find((u) => u.id === parseInt(form.UnitId));
-    const type = itemTypes.find((t) => t.id === parseInt(form.ItemTypeId));
+    const group = state.itemGroups.find((g) => String(g.id) === String(form.GroupId));
+    const unit = uoms.find((u) => String(u.id) === String(form.UnitId));
+    const type = itemTypes.find((t) => String(t.id) === String(form.ItemTypeId));
     const partNo = editing ? form.IM_Part_No : `${group?.PrefixName || 'IT'}${String(state.items.length + 1).padStart(5, '0')}`;
     const payload = { ...form, IM_Part_No: partNo, GroupName: group?.IM_PartName || '', UnitName: unit?.RGV_vDescription || '', ItemTypeName: type?.RGV_vDescription || '' };
     if (editing) dispatch({ type: 'UPDATE', entity: 'items', payload: { ...payload, id: editing.id } });
@@ -62,7 +62,7 @@ const ItemMaster = () => {
   return (
     <div>
       <PageHeader icon={Package} title="Item Master" description="30+ fields, 12 dropdowns — most complex page in the system" />
-      <ActionBar onAdd={openCreate} addLabel="Add Item" onExport={() => exportToExcel(state.items, columns, 'items')} onRefresh={() => {}} />
+      <ActionBar onAdd={openCreate} addLabel="Add Item" onExport={() => exportToExcel(state.items, columns, 'items')} onRefresh={reload} />
       <div className="mt-4"><DataTable columns={columns} data={state.items} onEdit={openEdit} onDelete={(r) => { setDeleteTarget(r); setDeleteOpen(true); }} /></div>
 
       <FormModal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Item' : 'Create Item'} width="max-w-4xl">

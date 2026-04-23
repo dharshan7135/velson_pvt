@@ -6,7 +6,7 @@ import ActionBar from '../../components/ActionBar';
 import { Database } from 'lucide-react';
 
 const SystemInfoMaster = () => {
-  const { state } = useApp();
+  const { state, reload } = useApp();
 
   const columns = [
     { key: 'IPAddress', label: 'IP Address' },
@@ -19,7 +19,7 @@ const SystemInfoMaster = () => {
   return (
     <div>
       <PageHeader icon={Database} title="System Info Master" description="Device registry for audit trail — every workstation must be registered" />
-      <ActionBar onRefresh={() => {}} />
+      <ActionBar onRefresh={reload} />
       <div className="mt-4"><DataTable columns={columns} data={state.systemInfo} /></div>
     </div>
   );

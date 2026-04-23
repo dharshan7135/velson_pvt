@@ -8,7 +8,7 @@ import { exportToExcel } from '../../utils/exportExcel';
 import { useNavigate } from 'react-router-dom';
 
 const QuotationIndex = () => {
-  const { state } = useApp();
+  const { state, reload } = useApp();
   const navigate = useNavigate();
 
   const columns = [
@@ -23,8 +23,8 @@ const QuotationIndex = () => {
   return (
     <div>
       <PageHeader icon={FileText} title="Quotations" description="All quotations with filters" />
-      <ActionBar onAdd={() => navigate('/sales/quotation/new')} addLabel="New Quotation" onExport={() => exportToExcel(state.quotations, columns, 'quotations')} onRefresh={() => {}} />
-      <div className="mt-4"><DataTable columns={columns} data={state.quotations} onEdit={(r) => navigate('/sales/quotation/new')} /></div>
+      <ActionBar onAdd={() => navigate('/sales/quotation/new')} addLabel="New Quotation" onExport={() => exportToExcel(state.quotations, columns, 'quotations')} onRefresh={reload} />
+      <div className="mt-4"><DataTable columns={columns} data={state.quotations} onEdit={(r) => navigate('/sales/quotation/new', { state: { editData: r } })} /></div>
     </div>
   );
 };

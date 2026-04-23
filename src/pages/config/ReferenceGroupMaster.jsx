@@ -10,7 +10,7 @@ import { Link2 } from 'lucide-react';
 import { exportToExcel } from '../../utils/exportExcel';
 
 const ReferenceGroupMaster = () => {
-  const { state, dispatch } = useApp();
+  const { state, dispatch, reload } = useApp();
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -76,7 +76,7 @@ const ReferenceGroupMaster = () => {
         onAdd={!showDeleted ? openCreate : undefined}
         addLabel="Add Group"
         onExport={() => exportToExcel(displayData, columns, 'reference_groups')}
-        onRefresh={() => {}}
+        onRefresh={reload}
         onUndelete={() => setShowDeleted(!showDeleted)}
       />
 

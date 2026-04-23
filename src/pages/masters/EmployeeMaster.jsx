@@ -11,7 +11,7 @@ import { exportToExcel } from '../../utils/exportExcel';
 import { getRefValuesByGroup } from '../../utils/mockData';
 
 const EmployeeMaster = () => {
-  const { state, dispatch } = useApp();
+  const { state, dispatch, reload } = useApp();
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -37,10 +37,10 @@ const EmployeeMaster = () => {
   const openEdit = (row) => { setEditing(row); setForm({ ...empty, ...row }); setModalOpen(true); };
 
   const handleSave = () => {
-    const dept = departments.find((d) => d.id === parseInt(form.DepartmentId));
-    const desig = designations.find((d) => d.id === parseInt(form.DesignationId));
-    const contractor = state.contractors.find((c) => c.id === parseInt(form.ContractId));
-    const company = state.companies.find((c) => c.id === parseInt(form.CompanyId));
+    const dept = departments.find((d) => String(d.id) === String(form.DepartmentId));
+    const desig = designations.find((d) => String(d.id) === String(form.DesignationId));
+    const contractor = state.contractors.find((c) => String(c.id) === String(form.ContractId));
+    const company = state.companies.find((c) => String(c.id) === String(form.CompanyId));
     const payload = { ...form, DepartmentName: dept?.RGV_vDescription || '', DesignationName: desig?.RGV_vDescription || '', ContractorName: contractor?.Contract_Name || '', CompanyName: company?.CompanyName || '' };
     if (editing) dispatch({ type: 'UPDATE', entity: 'employees', payload: { ...payload, id: editing.id } });
     else dispatch({ type: 'ADD', entity: 'employees', payload });
@@ -59,7 +59,7 @@ const EmployeeMaster = () => {
           <div className="text-center px-4 py-2 bg-amber-50 rounded-xl"><span className="text-lg font-bold text-amber-600">{relievedCount}</span><p className="text-xs text-slate-500">Relieved</p></div>
         </div>
       </PageHeader>
-      <ActionBar onAdd={openCreate} addLabel="Add Employee" onExport={() => exportToExcel(state.employees, columns, 'employees')} onRefresh={() => {}} />
+      <ActionBar onAdd={openCreate} addLabel="Add Employee" onExport={() => exportToExcel(state.employees, columns, 'employees')} onRefresh={reload} />
       <div className="mt-4"><DataTable columns={columns} data={state.employees} onEdit={openEdit} onDelete={(r) => { setDeleteTarget(r); setDeleteOpen(true); }} /></div>
 
       <FormModal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Employee' : 'Create Employee'} width="max-w-3xl">

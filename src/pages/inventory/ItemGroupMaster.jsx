@@ -10,7 +10,7 @@ import { Layers } from 'lucide-react';
 import { exportToExcel } from '../../utils/exportExcel';
 
 const ItemGroupMaster = () => {
-  const { state, dispatch } = useApp();
+  const { state, dispatch, reload } = useApp();
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -44,7 +44,7 @@ const ItemGroupMaster = () => {
   return (
     <div>
       <PageHeader icon={Layers} title="Item Group Master" description="Item classification with store & part prefix — soft delete + undelete" />
-      <ActionBar onAdd={!showDeleted ? openCreate : undefined} addLabel="Add Group" onExport={() => exportToExcel(displayData, columns, 'item_groups')} onRefresh={() => {}} onUndelete={() => setShowDeleted(!showDeleted)} />
+      <ActionBar onAdd={!showDeleted ? openCreate : undefined} addLabel="Add Group" onExport={() => exportToExcel(displayData, columns, 'item_groups')} onRefresh={reload} onUndelete={() => setShowDeleted(!showDeleted)} />
       {showDeleted && <div className="mt-2 text-sm font-bold text-amber-600 flex items-center gap-2">Showing Deleted Records <button onClick={() => setShowDeleted(false)} className="text-xs text-[#0097A7] underline">Back to Active</button></div>}
       <div className="mt-4"><DataTable columns={columns} data={displayData} onEdit={!showDeleted ? openEdit : undefined} onDelete={!showDeleted ? (r) => { setDeleteTarget(r); setDeleteOpen(true); } : undefined} /></div>
       {showDeleted && deletedData.map((d) => (

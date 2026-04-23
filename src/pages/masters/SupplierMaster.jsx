@@ -12,7 +12,7 @@ import { getRefValuesByGroup } from '../../utils/mockData';
 
 // Supplier is structurally identical to Customer, with SupplierType instead of CustomerType
 const SupplierMaster = () => {
-  const { state, dispatch } = useApp();
+  const { state, dispatch, reload } = useApp();
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -44,7 +44,7 @@ const SupplierMaster = () => {
   return (
     <div>
       <PageHeader icon={Truck} title="Supplier Master" description="Same structure as Customer — uses SupplierType dropdown" />
-      <ActionBar onAdd={openCreate} addLabel="Add Supplier" onExport={() => exportToExcel(state.suppliers, columns, 'suppliers')} onRefresh={() => {}} />
+      <ActionBar onAdd={openCreate} addLabel="Add Supplier" onExport={() => exportToExcel(state.suppliers, columns, 'suppliers')} onRefresh={reload} />
       <div className="mt-4"><DataTable columns={columns} data={state.suppliers} onEdit={openEdit} onDelete={(r) => { setDeleteTarget(r); setDeleteOpen(true); }} /></div>
       <FormModal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Supplier' : 'Create Supplier'} width="max-w-3xl">
         <FormContainer columns={3}>

@@ -21,17 +21,18 @@ const tabs = [
 ];
 
 const emptyForm = {
-  CompanyCode: '', CompanyName: '', CompanyTypeId: '', Status: 'Active',
+  CompanyCode: '', CompanyName: '', CompanyTypeId: '', CompanyTypeName: '', Status: 'Active',
   DoorNumber: '', Street: '', Place: '', Post: '', City: '', Taluk: '', District: '', DistrictCode: '', State: '', StateCode: '', Country: '', PinCode: '', FullAddress: '',
   GSTIN: '', PanNo: '',
   CPhoneNumber: '', CEMailId: '', CWebsiteURL: '', MPhoneNumber: '', MEMailId: '', MWebsiteURL: '',
   PPhoneNumber: '', PEMailId: '', PWebsiteURL: '', SPhoneNumber: '', SEMailId: '', SWebsiteURL: '',
   SERPhoneNumber: '', SEREMailId: '', SERWebsiteURL: '',
   BankAccountType: '', BankAccountName: '', BankAccountNumber: '', BankName: '', BankIFSCCode: '', BankMICRCode: '', BankBranch: '', BankDistrict: '', BankState: '', BankPinCode: '', BankCountry: '', BankFullAddress: '',
+  CompanyLogo: '',
 };
 
 const CompanyMaster = () => {
-  const { state, dispatch } = useApp();
+  const { state, dispatch, reload } = useApp();
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -60,8 +61,10 @@ const CompanyMaster = () => {
   const openEdit = (row) => { setEditing(row); setForm({ ...emptyForm, ...row }); setActiveTab('basic'); setModalOpen(true); };
 
   const handleSave = () => {
-    if (editing) dispatch({ type: 'UPDATE', entity: 'companies', payload: { ...form, id: editing.id } });
-    else dispatch({ type: 'ADD', entity: 'companies', payload: form });
+    const typeObj = companyTypes.find((c) => String(c.id) === String(form.CompanyTypeId));
+    const payload = { ...form, CompanyTypeName: typeObj?.RGV_vDescription || '' };
+    if (editing) dispatch({ type: 'UPDATE', entity: 'companies', payload: { ...payload, id: editing.id } });
+    else dispatch({ type: 'ADD', entity: 'companies', payload });
     setModalOpen(false);
   };
 
@@ -77,7 +80,7 @@ const CompanyMaster = () => {
   return (
     <div>
       <PageHeader icon={Building2} title="Company Master" description="50+ fields across 6 sections — tabbed interface" />
-      <ActionBar onAdd={openCreate} addLabel="Add Company" onExport={() => exportToExcel(state.companies, columns, 'companies')} onRefresh={() => {}} />
+      <ActionBar onAdd={openCreate} addLabel="Add Company" onExport={() => exportToExcel(state.companies, columns, 'companies')} onRefresh={reload} />
       <div className="mt-4"><DataTable columns={columns} data={state.companies} onEdit={openEdit} onDelete={(r) => { setDeleteTarget(r); setDeleteOpen(true); }} /></div>
 
       <FormModal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Company' : 'Create Company'} width="max-w-4xl">
@@ -88,7 +91,10 @@ const CompanyMaster = () => {
             <FormField label="Company Code" required><input className="form-input" value={form.CompanyCode} readOnly /></FormField>
             <FormField label="Company Name" required className="sm:col-span-2"><input className="form-input" value={form.CompanyName} onChange={(e) => set('CompanyName', e.target.value)} /></FormField>
             <FormField label="Company Type" required>
-              <select className="form-input" value={form.CompanyTypeId} onChange={(e) => set('CompanyTypeId', e.target.value)}>
+              <select className="form-input" value={form.CompanyTypeId} onChange={(e) => {
+                const typeObj = companyTypes.find((c) => String(c.id) === e.target.value);
+                setForm({ ...form, CompanyTypeId: e.target.value, CompanyTypeName: typeObj?.RGV_vDescription || '' });
+              }}>
                 <option value="">Select Type</option>
                 {companyTypes.map((c) => <option key={c.id} value={c.id}>{c.RGV_vDescription}</option>)}
               </select>
@@ -156,7 +162,15 @@ const CompanyMaster = () => {
         {activeTab === 'branding' && (
           <FormContainer columns={1}>
             <FormField label="Company Logo">
-              <input type="file" className="form-input" accept="image/*" />
+              <input type="file" className="form-input" accept="image/*" onChange={(e) => {
+                const file = e.target.files[0];
+                if (file) {
+                  const reader = new FileReader();
+                  reader.onloadend = () => set('CompanyLogo', reader.result);
+                  reader.readAsDataURL(file);
+                }
+              }} />
+              {form.CompanyLogo && <img src={form.CompanyLogo} alt="Logo Preview" className="mt-2 h-20 rounded-lg border" />}
             </FormField>
           </FormContainer>
         )}

@@ -11,7 +11,7 @@ import { exportToExcel } from '../../utils/exportExcel';
 import { generateNextCode } from '../../utils/mockData';
 
 const ReferenceGroupValue = () => {
-  const { state, dispatch } = useApp();
+  const { state, dispatch, reload } = useApp();
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -23,7 +23,7 @@ const ReferenceGroupValue = () => {
 
   const filteredValues = useMemo(() => {
     let vals = state.referenceGroupValues.filter((v) => v.status === 'A');
-    if (filterGroupId) vals = vals.filter((v) => v.RG_iID === parseInt(filterGroupId));
+    if (filterGroupId) vals = vals.filter((v) => String(v.RG_iID) === String(filterGroupId));
     return vals;
   }, [state.referenceGroupValues, filterGroupId]);
 
@@ -35,8 +35,8 @@ const ReferenceGroupValue = () => {
 
   const openCreate = () => {
     setEditing(null);
-    const groupId = filterGroupId ? parseInt(filterGroupId) : '';
-    const existing = state.referenceGroupValues.filter((v) => v.RG_iID === groupId);
+    const groupId = filterGroupId ? filterGroupId : '';
+    const existing = state.referenceGroupValues.filter((v) => String(v.RG_iID) === String(groupId));
     const autoCode = groupId ? generateNextCode('', existing, 'RGV_vCode') : '';
     setForm({ RG_iID: groupId, RGV_vCode: autoCode, RGV_vDescription: '' });
     setModalOpen(true);
@@ -49,15 +49,15 @@ const ReferenceGroupValue = () => {
   };
 
   const handleGroupChange = (groupId) => {
-    const id = parseInt(groupId);
-    const existing = state.referenceGroupValues.filter((v) => v.RG_iID === id);
-    const group = groups.find((g) => g.id === id);
+    const id = String(groupId);
+    const existing = state.referenceGroupValues.filter((v) => String(v.RG_iID) === id);
+    const group = groups.find((g) => String(g.id) === id);
     const autoCode = generateNextCode(group ? group.RG_vCode.substring(0, 2).toUpperCase() : '', existing, 'RGV_vCode');
     setForm({ ...form, RG_iID: id, RGV_vCode: autoCode });
   };
 
   const handleSave = () => {
-    const group = groups.find((g) => g.id === form.RG_iID);
+    const group = groups.find((g) => String(g.id) === String(form.RG_iID));
     const payload = { ...form, groupName: group?.RG_vCode || '', status: 'A' };
     if (editing) {
       dispatch({ type: 'UPDATE', entity: 'referenceGroupValues', payload: { ...payload, id: editing.id } });
@@ -83,7 +83,7 @@ const ReferenceGroupValue = () => {
         onAdd={openCreate}
         addLabel="Add Value"
         onExport={() => exportToExcel(filteredValues, columns, 'reference_values')}
-        onRefresh={() => {}}
+        onRefresh={reload}
       />
 
       <div className="mt-4">

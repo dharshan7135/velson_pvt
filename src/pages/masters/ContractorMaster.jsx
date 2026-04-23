@@ -10,7 +10,7 @@ import { Handshake } from 'lucide-react';
 import { exportToExcel } from '../../utils/exportExcel';
 
 const ContractorMaster = () => {
-  const { state, dispatch } = useApp();
+  const { state, dispatch, reload } = useApp();
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -39,7 +39,7 @@ const ContractorMaster = () => {
   return (
     <div>
       <PageHeader icon={Handshake} title="Contractor Master" description="Manage contractors — feeds Employee Master dropdown" />
-      <ActionBar onAdd={openCreate} addLabel="Add Contractor" onExport={() => exportToExcel(state.contractors, columns, 'contractors')} onRefresh={() => {}} />
+      <ActionBar onAdd={openCreate} addLabel="Add Contractor" onExport={() => exportToExcel(state.contractors, columns, 'contractors')} onRefresh={reload} />
       <div className="mt-4">
         <DataTable columns={columns} data={state.contractors} onEdit={openEdit} onDelete={(r) => { setDeleteTarget(r); setDeleteOpen(true); }} />
       </div>

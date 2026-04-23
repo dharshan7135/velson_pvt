@@ -10,7 +10,7 @@ import { BookOpen } from 'lucide-react';
 import { exportToExcel } from '../../utils/exportExcel';
 
 const LedgerMaster = () => {
-  const { state, dispatch } = useApp();
+  const { state, dispatch, reload } = useApp();
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -36,7 +36,7 @@ const LedgerMaster = () => {
   return (
     <div>
       <PageHeader icon={BookOpen} title="Ledger Master" description="Tax ledger accounts for GST configuration" />
-      <ActionBar onAdd={openCreate} addLabel="Add Ledger" onExport={() => exportToExcel(state.ledgerMasters, columns, 'ledger_master')} onRefresh={() => {}} />
+      <ActionBar onAdd={openCreate} addLabel="Add Ledger" onExport={() => exportToExcel(state.ledgerMasters, columns, 'ledger_master')} onRefresh={reload} />
       <div className="mt-4">
         <DataTable columns={columns} data={state.ledgerMasters} onEdit={openEdit} onDelete={(r) => { setDeleteTarget(r); setDeleteOpen(true); }} />
       </div>

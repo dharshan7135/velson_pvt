@@ -1,7 +1,21 @@
-import React from 'react';
-import { Search, Plus, RefreshCw, Download, Trash2, X, RotateCcw } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { Search, Plus, RefreshCw, Download, Trash2, X, RotateCcw, Loader2 } from 'lucide-react';
 
 const ActionBar = ({ onSearch, onAdd, onRefresh, onExport, onDelete, onClear, onUndelete, searchValue, onSearchChange, addLabel = 'Add New' }) => {
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(async () => {
+    if (refreshing || !onRefresh) return;
+    setRefreshing(true);
+    try {
+      await onRefresh();
+    } catch (e) {
+      // errors are already handled in AppContext
+    } finally {
+      setRefreshing(false);
+    }
+  }, [onRefresh, refreshing]);
+
   return (
     <div className="bg-white border-t border-slate-200 rounded-b-2xl px-4 py-3 flex flex-wrap items-center gap-2 animate-fade-in">
       {/* Search */}
@@ -39,10 +53,19 @@ const ActionBar = ({ onSearch, onAdd, onRefresh, onExport, onDelete, onClear, on
 
       {onRefresh && (
         <button
-          onClick={onRefresh}
-          className="px-4 py-2 text-xs font-bold rounded-lg border border-[#0097A7] text-[#0097A7] hover:bg-[#0097A7]/5 hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-1.5"
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all duration-200 flex items-center gap-1.5 ${
+            refreshing
+              ? 'border-[#0097A7]/40 text-[#0097A7]/60 bg-[#0097A7]/5 cursor-wait'
+              : 'border-[#0097A7] text-[#0097A7] hover:bg-[#0097A7]/5 hover:-translate-y-0.5'
+          }`}
         >
-          <RefreshCw size={14} /> Refresh
+          <RefreshCw
+            size={14}
+            className={refreshing ? 'animate-spin' : ''}
+          />
+          {refreshing ? 'Refreshing…' : 'Refresh'}
         </button>
       )}
 

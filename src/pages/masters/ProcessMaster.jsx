@@ -11,7 +11,7 @@ import { exportToExcel } from '../../utils/exportExcel';
 import { getRefValuesByGroup } from '../../utils/mockData';
 
 const ProcessMaster = () => {
-  const { state, dispatch } = useApp();
+  const { state, dispatch, reload } = useApp();
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -36,9 +36,9 @@ const ProcessMaster = () => {
   const openEdit = (row) => { setEditing(row); setForm(row); setModalOpen(true); };
 
   const handleSave = () => {
-    const pt = processTypes.find((p) => p.id === parseInt(form.ProcessTypeId));
-    const tm = teams.find((t) => t.id === parseInt(form.TeamId));
-    const mc = state.machines.find((m) => m.id === parseInt(form.Machine_id));
+    const pt = processTypes.find((p) => String(p.id) === String(form.ProcessTypeId));
+    const tm = teams.find((t) => String(t.id) === String(form.TeamId));
+    const mc = state.machines.find((m) => String(m.id) === String(form.Machine_id));
     const payload = { ...form, ProcessTypeName: pt?.RGV_vDescription || '', TeamName: tm?.RGV_vDescription || '', Machine_Name: mc?.Machine_Name || form.Machine_Name };
     if (editing) dispatch({ type: 'UPDATE', entity: 'processes', payload: { ...payload, id: editing.id } });
     else dispatch({ type: 'ADD', entity: 'processes', payload });
@@ -48,7 +48,7 @@ const ProcessMaster = () => {
   return (
     <div>
       <PageHeader icon={Settings} title="Process Master" description="Define manufacturing processes with time parameters" />
-      <ActionBar onAdd={openCreate} addLabel="Add Process" onExport={() => exportToExcel(state.processes, columns, 'processes')} onRefresh={() => {}} />
+      <ActionBar onAdd={openCreate} addLabel="Add Process" onExport={() => exportToExcel(state.processes, columns, 'processes')} onRefresh={reload} />
       <div className="mt-4"><DataTable columns={columns} data={state.processes} onEdit={openEdit} onDelete={(r) => { setDeleteTarget(r); setDeleteOpen(true); }} /></div>
       <FormModal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Process' : 'Create Process'} width="max-w-3xl">
         <FormContainer columns={3}>
@@ -69,7 +69,7 @@ const ProcessMaster = () => {
           </FormField>
           <FormField label="Machine">
             <select className="form-input" value={form.Machine_id} onChange={(e) => {
-              const m = state.machines.find((mc) => mc.id === parseInt(e.target.value));
+              const m = state.machines.find((mc) => String(mc.id) === String(e.target.value));
               setForm({ ...form, Machine_id: e.target.value, Machine_Name: m?.Machine_Name || '' });
             }}>
               <option value="">Select Machine</option>

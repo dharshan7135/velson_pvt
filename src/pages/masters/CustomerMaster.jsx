@@ -11,7 +11,7 @@ import { exportToExcel } from '../../utils/exportExcel';
 import { getRefValuesByGroup } from '../../utils/mockData';
 
 const CustomerMaster = () => {
-  const { state, dispatch } = useApp();
+  const { state, dispatch, reload } = useApp();
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -32,8 +32,25 @@ const CustomerMaster = () => {
 
   // Mock state autocomplete — auto-fill StateCode
   const states = [
-    { name: 'Tamil Nadu', code: '33' }, { name: 'Maharashtra', code: '27' }, { name: 'Karnataka', code: '29' },
-    { name: 'Delhi', code: '07' }, { name: 'Gujarat', code: '24' }, { name: 'Rajasthan', code: '08' },
+    { name: 'Jammu & Kashmir', code: '01' }, { name: 'Himachal Pradesh', code: '02' },
+    { name: 'Punjab', code: '03' }, { name: 'Chandigarh', code: '04' },
+    { name: 'Uttarakhand', code: '05' }, { name: 'Haryana', code: '06' },
+    { name: 'Delhi', code: '07' }, { name: 'Rajasthan', code: '08' },
+    { name: 'Uttar Pradesh', code: '09' }, { name: 'Bihar', code: '10' },
+    { name: 'Sikkim', code: '11' }, { name: 'Arunachal Pradesh', code: '12' },
+    { name: 'Nagaland', code: '13' }, { name: 'Manipur', code: '14' },
+    { name: 'Mizoram', code: '15' }, { name: 'Tripura', code: '16' },
+    { name: 'Meghalaya', code: '17' }, { name: 'Assam', code: '18' },
+    { name: 'West Bengal', code: '19' }, { name: 'Jharkhand', code: '20' },
+    { name: 'Odisha', code: '21' }, { name: 'Chhattisgarh', code: '22' },
+    { name: 'Madhya Pradesh', code: '23' }, { name: 'Gujarat', code: '24' },
+    { name: 'Daman & Diu', code: '25' }, { name: 'Dadra & Nagar Haveli', code: '26' },
+    { name: 'Maharashtra', code: '27' }, { name: 'Andhra Pradesh (Old)', code: '28' },
+    { name: 'Karnataka', code: '29' }, { name: 'Goa', code: '30' },
+    { name: 'Lakshadweep', code: '31' }, { name: 'Kerala', code: '32' },
+    { name: 'Tamil Nadu', code: '33' }, { name: 'Puducherry', code: '34' },
+    { name: 'Andaman & Nicobar Islands', code: '35' }, { name: 'Telangana', code: '36' },
+    { name: 'Andhra Pradesh', code: '37' }, { name: 'Ladakh', code: '38' },
   ];
 
   const handleStateChange = (val) => {
@@ -62,7 +79,7 @@ const CustomerMaster = () => {
   return (
     <div>
       <PageHeader icon={Briefcase} title="Customer Master" description="28 fields with AJAX autocomplete for city, state, bank" />
-      <ActionBar onAdd={openCreate} addLabel="Add Customer" onExport={() => exportToExcel(state.customers, columns, 'customers')} onRefresh={() => {}} />
+      <ActionBar onAdd={openCreate} addLabel="Add Customer" onExport={() => exportToExcel(state.customers, columns, 'customers')} onRefresh={reload} />
       <div className="mt-4"><DataTable columns={columns} data={state.customers} onEdit={openEdit} onDelete={(r) => { setDeleteTarget(r); setDeleteOpen(true); }} /></div>
 
       <FormModal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Customer' : 'Create Customer'} width="max-w-4xl">
