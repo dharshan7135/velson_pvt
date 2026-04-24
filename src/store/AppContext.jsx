@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useReducer } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback, useState } from 'react';
 import { generateMockData } from '../utils/mockData';
+import { fetchAll, createRecord, updateRecord, deleteRecord } from '../utils/api';
 
+// ── Initial state (mock data as fallback until API loads) ──
 const initialState = {
   user: { id: 1, username: 'admin', firstName: 'Admin', role: 'SuperAdmin' },
   isAuthenticated: false,
@@ -51,10 +53,13 @@ function reducer(state, action) {
       return { ...state, isAuthenticated: false };
     case 'SET':
       return { ...state, [entity]: payload };
+    case 'LOAD_ALL':
+      // Merge all entities from API bulk response into state
+      return { ...state, ...payload };
     case 'ADD':
       return {
         ...state,
-        [entity]: [...(state[entity] || []), { ...payload, id: Date.now() }],
+        [entity]: [...(state[entity] || []), payload],
       };
     case 'UPDATE':
       return {
@@ -91,9 +96,67 @@ const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // ── Load all data from API on mount ──
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await fetchAll();
+        if (!cancelled) {
+          dispatch({ type: 'LOAD_ALL', payload: data });
+        }
+      } catch (err) {
+        console.error('Failed to load data from API, using mock data:', err);
+        if (!cancelled) setError(err.message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // ── API-aware dispatch helpers ──
+  const apiAdd = useCallback(async (entity, data) => {
+    try {
+      const created = await createRecord(entity, data);
+      dispatch({ type: 'ADD', entity, payload: created });
+      return created;
+    } catch (err) {
+      console.error(`Failed to create ${entity}:`, err);
+      // Fallback: add locally with temp id
+      dispatch({ type: 'ADD', entity, payload: { ...data, id: Date.now() } });
+      throw err;
+    }
+  }, []);
+
+  const apiUpdate = useCallback(async (entity, id, data) => {
+    try {
+      const updated = await updateRecord(entity, id, data);
+      dispatch({ type: 'UPDATE', entity, payload: updated });
+      return updated;
+    } catch (err) {
+      console.error(`Failed to update ${entity}:`, err);
+      dispatch({ type: 'UPDATE', entity, payload: { ...data, id } });
+      throw err;
+    }
+  }, []);
+
+  const apiDelete = useCallback(async (entity, id) => {
+    try {
+      await deleteRecord(entity, id);
+      dispatch({ type: 'DELETE', entity, payload: id });
+    } catch (err) {
+      console.error(`Failed to delete ${entity}:`, err);
+      dispatch({ type: 'DELETE', entity, payload: id });
+      throw err;
+    }
+  }, []);
 
   return (
-    <AppContext.Provider value={{ state, dispatch }}>
+    <AppContext.Provider value={{ state, dispatch, loading, error, apiAdd, apiUpdate, apiDelete }}>
       {children}
     </AppContext.Provider>
   );
